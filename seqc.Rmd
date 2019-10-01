@@ -1,0 +1,769 @@
+---
+title: "Analysis of the SEQC data"
+author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
+date:  '`r format(Sys.time(), "%d %B, %Y")`'
+output: 
+  html_document: 
+    toc: yes
+    toc_float: yes
+    df_print: paged
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r knitr, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      fig.height = (height_clu <- 4.5), 
+                      fig.width = (width_clu <- 11), 
+                      fig.align = "center")
+```
+
+```{r setup, echo=FALSE, message=FALSE}
+library(knitr)
+library(cluster)
+library(dendextend)
+library(awst)
+#################################
+png_width <- 600
+png_height <- 300
+png_res <- 1/300
+save_png <- FALSE
+x_legend <- 81
+```
+
+# Install and load `awst`
+
+```{r install_awst, eval=FALSE, echo=TRUE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("drisso/awst")
+```
+
+# Data import and cleaning
+
+The collection of the SEQC datasets is available throught the `seqc` Bioconductor package.
+It can be installed with the following.
+
+```{r install_seqc, eval=FALSE, echo=TRUE}
+BiocManager::install("seqc")
+```
+
+We next build the data matrix from the "ILM_aceview" experiments. We remove duplicate gene symbols, ERCC spike-ins, and genes with no ENTREZ ID.
+
+```{r preproc, eval=TRUE}
+if(!file.exists("seqc20190914_ILM_aceview_Level_3.RData")) {
+  library(seqc)
+  
+  sites <- c("MAY", "BGI", "CNL", "NVS", "AGR", "COH") 
+  k <- 1
+  theSite <- sites[k]
+  
+  ddata <- get(paste0("ILM_aceview_gene_", theSite))
+  ddata <- ddata[!is.na(ddata$EntrezID),]
+  ddata <- ddata[!ddata$IsERCC,]
+  feature_annotation <- data.frame(ddata[, 1:3], row.names = ddata$EntrezID)
+  ddata <- as.matrix(ddata[, -c(1:4)])
+  sum(duplicated(feature_annotation$Symbol))
+  sum(duplicated(feature_annotation$EntrezID))
+  row.names(ddata) <- feature_annotation$EntrezID
+  
+  wwhich <- which(substr(colnames(ddata), 1, 1) %in% c("E", "F"))
+  dim(ddata <- ddata[, -wwhich])
+  substr_colnames_ddata <- substr(colnames(ddata), 1, 3)
+  table(substr_colnames_ddata)
+  samples <- unique(substr_colnames_ddata)
+  wwhich <- which(substr_colnames_ddata == samples[1])
+  data_matrix <- matrix(rowMeans(ddata[, wwhich]), ncol = 1)
+  rownames(data_matrix) <- rownames(ddata)
+  for(kk in 2:length(samples)) {
+    wwhich <- which(substr_colnames_ddata == samples[kk])
+    data_matrix <- cbind(data_matrix, rowMeans(ddata[, wwhich]))
+  }
+  colnames(data_matrix) <- paste(gsub("_", "", samples), theSite, sep = "_")
+  
+  for(k in 2:length(sites)) {
+    (theSite <- sites[k])
+    ddata <- get(paste0("ILM_aceview_gene_", theSite))
+    ddata <- ddata[!is.na(ddata$EntrezID),]
+    ddata <- ddata[!ddata$IsERCC,]
+    row.names(ddata) <- ddata$EntrezID
+    ddata <- as.matrix(ddata[, -c(1:4)])
+    ddata <- ddata[rownames(data_matrix),]
+    
+    wwhich <- which(substr(colnames(ddata), 1, 1) %in% c("E", "F"))
+    if(length(wwhich) > 0) dim(ddata <- ddata[, -wwhich])
+    substr_colnames_ddata <- substr(colnames(ddata), 1, 3)
+    table(substr_colnames_ddata)
+    samples <- unique(substr_colnames_ddata)
+    table(substr_colnames_ddata)
+    
+    for(kk in 1:length(samples)) {
+      wwhich <- which(substr_colnames_ddata == samples[kk])
+      data_matrix <- cbind(data_matrix, rowMeans(ddata[, wwhich]))
+    }
+    which(colnames(data_matrix) == "")
+    colnames(data_matrix)[which(colnames(data_matrix) == "")] <- paste(gsub("_", "", samples), theSite, sep = "_")
+  }
+  ddata <- floor(data_matrix)
+  
+  annotation.df <- data.frame(samples = colnames(ddata), row.names = colnames(ddata))
+  annotation.df$sample <- substr(annotation.df$samples, 1, 1)
+  annotation.df$sample.col <- factor(annotation.df$sample)
+  levels(annotation.df$sample.col) <- clust.col <- c("black", "red", "green2", "blue")
+  annotation.df$replicate <- substr(annotation.df$samples, 2, 2)
+  annotation.df$site <- substr(annotation.df$samples, 4, 6)
+  annotation.df$site.col <- factor(annotation.df$site)
+  levels(annotation.df$site.col) <- palette()[2:7]
+  kable(addmargins(table(annotation.df$sample, annotation.df$site)))
+  
+  save(ddata, annotation.df, feature_annotation, clust.col, 
+       file = "seqc20190914_ILM_aceview_Level_3.RData")
+} else {
+  load("seqc20190914_ILM_aceview_Level_3.RData")
+}
+
+kable(addmargins(table(annotation.df$sample, annotation.df$site)), caption = "Distribution of samples per sites")
+```
+
+```{r additional functions, echo = FALSE}
+get_CPM <- function (gene_per_sample_matrix) 
+{
+    tmp <- 10^6/apply(gene_per_sample_matrix, 2, sum)
+    invisible(t(gene_per_sample_matrix) * tmp)
+}
+###
+get_TPM <- function(gene_per_sample_matrix, gene_length) {
+  ans <- 1e3 * gene_per_sample_matrix/gene_length
+#head(ans[1,] * gene_legth[1])
+  tmp <- 1e6/apply(ans, 2, sum, na.rm = TRUE)
+  ans <- tmp * t(ans)
+  invisible(ans)
+}
+###
+get_Hart2013 <- function(sample_per_gene_TPM_matrix) {
+  ans <- sample_per_gene_TPM_matrix
+  for(i in 1:nrow(sample_per_gene_TPM_matrix)) {
+    wd <- log2(1 + sample_per_gene_TPM_matrix[i,])
+    wwhich <- which(wd > 0)
+    d <- density(wd[wwhich], n = 1000)
+    ccenter <- (d$x[d$x > 1])[which.max(d$y[d$x > 1])]
+    those_greater_than_center <- wd[which(wd > ccenter)]
+    U <- mean(those_greater_than_center)
+    ssd <- (U - ccenter) * sqrt(pi/2)
+    ans[i,] <- (wd - ccenter)/ssd
+  }
+  invisible(ans)
+}
+###
+calinski <- function (hhc, dist = NULL, gMax = round(1 + 3.3 * log(length(hhc$order), 10))) {
+    if (is.null(dist)) {
+      dist <- cophenetic(hhc)
+      attr(dist, "method") <- "cophenetic"
+    } else if(attr(dist, "method") != "euclidean") dist <- cophenetic(hhc)
+    
+    dist <- as.matrix(dist)^2
+    A <- -dist/2
+    A_bar <- apply(A, 1, mean)
+    totalSum <- sum(diag(A) - 2 * A_bar + mean(A))
+    n <- length(hhc$order)
+    ans <- rep(0, gMax)
+    for (g in 2:gMax) {
+        cclust <- cutree(hhc, k = g)
+        withinSum <- 0
+        for (k in 1:g) {
+            if (sum(cclust == k) == 1) 
+                next
+            A <- as.matrix(-dist/2)[cclust == k, cclust == k]
+            A_bar <- apply(A, 1, mean)
+            withinSum <- withinSum + sum(diag(A) - 2 * A_bar + 
+                mean(A))
+        }
+        betweenSum <- totalSum - withinSum
+        betweenSum <- betweenSum/(g - 1)
+        withinSum <- withinSum/(n - g)
+        ans[g] <- betweenSum/withinSum
+    }
+    class(ans) <- "calinski"
+    return(ans)
+}
+###
+add_Calinski_curve <- function() {
+  obj <- aCalinski/max(aCalinski) * 0.6
+  G <- length(obj)
+  ccol <- rep("black", G)
+  for (g in 2:(G - 1)) {
+    check <- obj[g - 1] < obj[g] & obj[g + 1] < obj[g]
+    if (check) ccol[g] <- "red"
+    }
+  xx <- floor(seq(from = 5, to = 70, length.out = length(aCalinski)))
+  nums <- paste(1:G); nums[1] <- ""
+  obj <- obj + 0.25
+  text(xx, obj, nums, col = ccol)
+  lines(xx, obj, col = "gray30", lty = "longdash")
+}
+```
+
+# Figure 2
+
+## Figure 2a: clustering on RSEM data after AWSN
+
+```{r _a.png}
+exprData <- awst(ddata)
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_a.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 4
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+
+levels(clustering) <- clust.col
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("clust", "sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+llegend  <- c("A (UHRR)", "B (HBRR)", "C (0.75A+0.25B)", "D (0.25A+0.75B)")
+legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(a)")
+add_Calinski_curve()
+
+png(file = "seqc20190914sil_a.png", width = png_width, height = png_height, res = png_res)
+
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+## Figure 2b: clustering on CPM data after AWSN
+
+```{r _b.png}
+exprData <-  get_CPM(ddata)
+exprData <- awst(t(exprData))
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+###
+hhc <- hclust(ddist <- d_3b <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_b.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 4
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- clust.col
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("clust", "sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(b)")
+add_Calinski_curve()
+png(file = "seqc20190914sil_b.png", width = png_width, height = png_height, res = png_res)
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+## Figure 2c: clustering on CPM data (std values)
+
+```{r _c.png}
+exprData <-  get_CPM(ddata)
+exprData <-  scale(exprData)
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+###
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+attr(aCalinski, "message") <- ""
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_c.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+tmp.col <- cbind(as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(c)")
+add_Calinski_curve()
+png(file = "seqc20190914sil_c.png", width = png_width, height = png_height, res = png_res)
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+## Figure 2d: clustering on CPM data (std values; top 100 genes)
+
+```{r _d.png}
+exprData <-  get_CPM(ddata)
+tmp <- apply(exprData, 2, sd)
+tmp <- sort(tmp)
+tmp <- names(tail(tmp, 100))
+exprData <-  scale(exprData[, tmp])
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+###
+hhc <- hclust(ddist <- d_3c <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_d.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 4
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- clust.col
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("clust", "sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(d)")
+add_Calinski_curve()
+png(file = "seqc20190914sil_d.png", width = png_width, height = png_height, res = png_res)
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+
+## Figure 2e: clustering on TPM data (std values)
+
+```{r _e.png}
+gene_length <- feature_annotation[rownames(ddata), "GeneLength"]
+names(gene_length) <- feature_annotation$EntrezID
+exprData_TPM <- get_TPM(ddata, gene_length)
+###
+exprData <-  scale(exprData_TPM)
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+###
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_e.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+tmp.col <- cbind(as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(e)")
+add_Calinski_curve()
+png(file = "seqc20190914sil_e.png", width = png_width, height = png_height, res = png_res)
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+## Figure 2f: clustering on TPM data (std values; top 100 genes)
+
+```{r _f.png}
+tmp <- apply(exprData_TPM, 2, sd)
+tmp <- sort(tmp)
+tmp <- names(tail(tmp, 100))
+exprData <-  scale(exprData_TPM[, tmp])
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+###
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_f.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 4
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- clust.col
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("clust", "sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(f)")
+add_Calinski_curve()
+png(file = "seqc20190914sil_f.png", width = png_width, height = png_height, res = png_res)
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+## Figure 2g: clustering on TPM data after AWSN
+
+```{r _g.png}
+exprData <- awst(t(exprData_TPM))
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+###
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_g.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 4
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- clust.col
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("clust", "sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(g)")
+add_Calinski_curve()
+png(file = "seqc20190914sil_g.png", width = png_width, height = png_height, res = png_res)
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+## Figure 2h: clustering on TPM data after Hart transformation
+
+```{r _h.png}
+exprData <- get_Hart2013(exprData_TPM)
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+###
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 6)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = "seqc20190914f2_h.png", width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 4
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- clust.col
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col), as.character(annotation.df$site.col))
+colnames(tmp.col) <- c("clust", "sample", "site")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.2)
+legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, "(h)")
+add_Calinski_curve()
+png(file = "seqc20190914sil_h.png", width = png_width, height = png_height, res = png_res)
+ssil <- silhouette(as.numeric(clustering), ddist)
+plot(ssil, main = mmain, col = clust.col)
+```
+
+## Figure of silhouttes (given the estimated partition)
+
+`r paste0(1:4, ": ", llegend)`
+
+<table>
+<tbody>
+<tr>
+<td><img src="seqc20190914sil_a.png">RSEM data paired with the AWST</td>
+<td><img src="seqc20190914sil_e.png">TPM data with the gene-wise standardization</td>
+</tr>
+<tr>
+<td><img src="seqc20190914sil_b.png">CPM data with the AWST</td>
+<td><img src="seqc20190914sil_f.png">TPM data with the gene-wise standardization, top 100 genes with the highest standard-deviation</td>
+</tr>
+<td><img src="seqc20190914sil_c.png">CPM data with the gene-wise standardization</td>
+<td><img src="seqc20190914sil_g.png">TPM data with the AWST</td>
+</tr>
+<tr>
+<td><img src="seqc20190914sil_d.png">CPM data with the gene-wise standardization, top 100 genes with the highest  standard-deviation</td>
+<td><img src="seqc20190914sil_h.png">TPM data with the transformation of Hart</td>
+</tr>
+</tbody>
+</table>
+
+# Figure 3
+
+```{r setup_of_figure_3}
+noof_topVariableGenes <- 2500
+set.seed(20190507) # needed to edit the color in the figures
+
+randomizedSamples <- sample(as.character(annotation.df$samples))
+annotation.df$noised <- "white"
+noise_col <- "gray40"
+mmark <- ""
+ddf <- 4
+noof_genes <- floor(nrow(ddata)/3)
+apply_perturbation <- function() return(0.1 + rchisq(noof_genes, df = ddf))
+```
+
+## 3 perturbed samples
+
+```{r perturb 3 sample}
+# perturbing the original raw-counts
+for(kk in 1:3) {
+  someGenes <- sample(rownames(ddata), noof_genes, replace = FALSE)
+  tmp <- apply_perturbation() * ddata[someGenes, randomizedSamples[kk]]
+  ddata[someGenes, randomizedSamples[kk]] <- tmp
+  annotation.df$noised[which(annotation.df$samples == randomizedSamples[kk])] <- noise_col
+}
+k <- kk + 1
+```
+
+
+### Figure 3a: clustering on CPM data (std values; top 2500 genes)
+
+```{r exprData_CPM}
+exprData_CPM <- get_CPM(ddata)
+apply_exprData_sd <- sort(apply(exprData_CPM, 2, sd))
+topVariableGenes <- names(tail(apply_exprData_sd, noof_topVariableGenes))
+exprData <-  scale(exprData_CPM[, topVariableGenes])
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+pprcomp <- prcomp(exprData); pprcomp$x <- scale(pprcomp$x)
+mmark <- "a"
+```
+
+```{r cluster_CPM}
+aCalinski <- calinski(hhc, gMax = 10)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0("seqc20190914f3_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 2
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering)[which(levels(clustering) == "1")] <- "black"
+levels(clustering)[which(levels(clustering) == "2")] <- "red"
+tmp.col <- cbind(annotation.df$noised, annotation.df$site.col, 
+                 annotation.df$sample.col, clustering)
+colnames(tmp.col) <- c("noise", "site", "sample", "clust")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift = -0.01)
+legend(x_legend, 1, legend=llegend, fill = clust.col, y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, paste0("(", mmark, ")"))
+add_Calinski_curve()
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+message("Silhouette.plot given the theoretical partition of the samples.")
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(ssil, main = mmain, col = clust.col)
+ppch <- rep(1, 108)
+ppch[which(annotation.df$noised != "white")] <- 6
+if(save_png) png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
+     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
+     xlab = "first principal component", ylab = "second principal component")
+abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
+text(-1.55, 3.9, paste0("(", mmark, ")"))
+```
+
+### Figure 3e: clustering on RSEM data after AWSN
+
+```{r RSEM_AWST}
+exprData <-  awst(ddata)
+exprData <- gene_filter(exprData)
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+pprcomp <- prcomp(exprData); pprcomp$x <- scale(pprcomp$x)
+mmark <- "e"
+```
+```{r plot_awst}
+aCalinski <- calinski(hhc, gMax = 10)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0("seqc20190914f3_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 4
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- clust.col
+tmp.col <- cbind(annotation.df$noised, annotation.df$site.col, 
+                 annotation.df$sample.col, clustering)
+colnames(tmp.col) <- c("noise", "site", "sample", "clust")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift = -0.01)
+legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, paste0("(", mmark, ")"))
+add_Calinski_curve()
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+message("Silhouette.plot given the theoretical partition of the samples.")
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(ssil, main = mmain, col = clust.col)
+if(save_png) png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
+     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
+     xlab = "first principal component", ylab = "second principal component")
+abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
+text(-1.55, 3.9, paste0("(", mmark, ")"))
+```
+
+## One-third perturbed samples
+
+```{r perturb one-third samples}
+# perturbing the original raw-counts
+for(kk in k:36) {
+  someGenes <- sample(rownames(ddata), noof_genes, replace = FALSE)
+  tmp <- apply_perturbation() * ddata[someGenes, randomizedSamples[kk]]
+  ddata[someGenes, randomizedSamples[kk]] <- tmp
+  annotation.df$noised[which(annotation.df$samples == randomizedSamples[kk])] <- noise_col
+}
+k <- kk + 1
+```
+
+### Figure 3b: clustering on CPM data (std values; top 2500 genes)
+
+```{r ref.label="exprData_CPM"}
+```
+```{r}
+mmark <- "b"
+```
+```{r ref.label="cluster_CPM"}
+```
+
+
+### Figure 3f: clustering on RSEM data after AWSN
+
+```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE}
+```
+```{r}
+mmark <- "f"
+```
+```{r plot_ASWT_3f, echo=FALSE, eval=TRUE}
+aCalinski <- calinski(hhc, gMax = 10)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0("seqc20190914f3_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 8
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+#abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+#table(clustering, annotation.df$sample.col)
+levels(clustering)[which(levels(clustering) == "1")] <- "black"
+levels(clustering)[which(levels(clustering) == "2")] <- "gray"
+levels(clustering)[which(levels(clustering) == "3")] <- "indianred"
+levels(clustering)[which(levels(clustering) == "4")] <- "red"
+levels(clustering)[which(levels(clustering) == "5")] <- "green3"
+levels(clustering)[which(levels(clustering) == "6")] <- "blue"
+levels(clustering)[which(levels(clustering) == "7")] <- "cornflowerblue"
+levels(clustering)[which(levels(clustering) == "8")] <- "greenyellow"
+clustering <- as.character(clustering)
+tmp.col <- cbind(annotation.df$noised, annotation.df$site.col, 
+                 annotation.df$sample.col, clustering)
+colnames(tmp.col) <- c("noise", "site", "sample", "clust")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift = -0.01)
+legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, paste0("(", mmark, ")"))
+add_Calinski_curve()
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+message("Silhouette.plot given the theoretical partition of the samples.")
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(ssil, main = mmain, col = clust.col)
+if(save_png) png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
+     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
+     xlab = "first principal component", ylab = "second principal component")
+abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
+text(-1.55, 3.9, paste0("(", mmark, ")"))
+```
+
+## Two-third perturbed samples
+
+```{r perturb two-third samples}
+# perturbing the original raw-counts
+for(kk in k:72) {  
+  someGenes <- sample(rownames(ddata), noof_genes, replace = FALSE)
+  tmp <- apply_perturbation() * ddata[someGenes, randomizedSamples[kk]]
+  ddata[someGenes, randomizedSamples[kk]] <- tmp
+  annotation.df$noised[which(annotation.df$samples == randomizedSamples[kk])] <- noise_col
+}
+k <- kk + 1
+```
+
+### Figure 3c: clustering on CPM data (std values; top 2500 genes)
+
+```{r ref.label="exprData_CPM"}
+```
+```{r}
+mmark <- "c"
+```
+```{r ref.label="cluster_CPM"}
+```
+
+
+### Figure 3g: clustering on RSEM data after AWSN
+
+```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE}
+```
+```{r}
+mmark <- "g"
+```
+```{r plot_ASWT_3g, echo=FALSE, eval=TRUE}
+aCalinski <- calinski(hhc, gMax = 10)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0("seqc20190914f3_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###clustering#############################################################################
+wwhere <- 8
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+#abline(h = hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+#table(clustering, annotation.df$sample.col)
+levels(clustering)[which(levels(clustering) == "1")] <- "black"
+levels(clustering)[which(levels(clustering) == "2")] <- "gray"
+levels(clustering)[which(levels(clustering) == "3")] <- "indianred"
+levels(clustering)[which(levels(clustering) == "4")] <- "red"
+levels(clustering)[which(levels(clustering) == "5")] <- "green3"
+levels(clustering)[which(levels(clustering) == "6")] <- "greenyellow"
+levels(clustering)[which(levels(clustering) == "7")] <- "blue"
+levels(clustering)[which(levels(clustering) == "8")] <- "cornflowerblue"
+clustering <- as.character(clustering)
+tmp.col <- cbind(annotation.df$noised, annotation.df$site.col, 
+                 annotation.df$sample.col, clustering)
+colnames(tmp.col) <- c("noise", "site", "sample", "clust")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift = -0.01)
+legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
+text(1, 0.95, paste0("(", mmark, ")"))
+add_Calinski_curve()
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+message("Silhouette.plot given the theoretical partition of the samples.")
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(ssil, main = mmain, col = clust.col)
+if(save_png) png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height, res = png_res)
+plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
+     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
+     xlab = "first principal component", ylab = "second principal component")
+abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
+text(-1.55, 3.9, paste0("(", mmark, ")"))
+```
+
+## All perturbed samples
+
+```{r perturb all samples}
+# perturbing the original raw-counts
+for(kk in k:108) { 
+  someGenes <- sample(rownames(ddata), noof_genes, replace = FALSE)
+  tmp <- apply_perturbation() * ddata[someGenes, randomizedSamples[kk]]
+  ddata[someGenes, randomizedSamples[kk]] <- tmp
+  annotation.df$noised[which(annotation.df$samples == randomizedSamples[kk])] <- noise_col
+}
+```
+
+### Figure 3d: clustering on CPM data (std values; top 2500 genes)
+
+```{r ref.label="exprData_CPM"}
+```
+```{r}
+mmark <- "d"
+```
+```{r ref.label="cluster_CPM"}
+```
+
+### Figure 3g: clustering on RSEM data after AWSN
+
+```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE}
+```
+```{r}
+mmark <- "h"
+```
+```{r, ref.label="plot_awst"}
+```
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
+# References
+
+- [A comprehensive assessment of RNA-seq accuracy, reproducibility and information content by the Sequencing Quality Control Consortium](https://www.nature.com/articles/nbt.2957)
+
+- [RNA-seq data generated from SEQC (MAQC-III) study](http://bioconductor.org/packages/release/data/experiment/html/seqc.html)
