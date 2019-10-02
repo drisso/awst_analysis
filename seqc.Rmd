@@ -19,19 +19,6 @@ knitr::opts_chunk$set(echo = FALSE,
                       fig.align = "center")
 ```
 
-```{r setup, echo=FALSE, message=FALSE}
-library(knitr)
-library(cluster)
-library(dendextend)
-library(awst)
-#################################
-png_width <- 600
-png_height <- 300
-png_res <- 1/300
-save_png <- FALSE
-x_legend <- 81
-```
-
 # Install and load `awst`
 
 ```{r install_awst, eval=FALSE, echo=TRUE}
@@ -48,6 +35,19 @@ It can be installed with the following.
 
 ```{r install_seqc, eval=FALSE, echo=TRUE}
 BiocManager::install("seqc")
+```
+
+```{r setup, echo=FALSE, message=FALSE}
+library(knitr)
+library(cluster)
+library(dendextend)
+library(awst)
+#################################
+png_width <- 600
+png_height <- 300
+png_res <- 1/300
+save_png <- FALSE
+x_legend <- 81
 ```
 
 We next build the data matrix from the "ILM_aceview" experiments. We remove duplicate gene symbols, ERCC spike-ins, and genes with no ENTREZ ID.
@@ -207,7 +207,7 @@ add_Calinski_curve <- function() {
 
 # Figure 2
 
-## Figure 2a: clustering on RSEM data after AWSN
+## Figure 2a: clustering on RSEM data after awst
 
 ```{r _a.png}
 exprData <- awst(ddata)
@@ -239,7 +239,7 @@ ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
 ```
 
-## Figure 2b: clustering on CPM data after AWSN
+## Figure 2b: clustering on CPM data after awst
 
 ```{r _b.png}
 exprData <-  get_CPM(ddata)
@@ -385,7 +385,7 @@ ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
 ```
 
-## Figure 2g: clustering on TPM data after AWSN
+## Figure 2g: clustering on TPM data after awst
 
 ```{r _g.png}
 exprData <- awst(t(exprData_TPM))
@@ -542,7 +542,7 @@ abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
 text(-1.55, 3.9, paste0("(", mmark, ")"))
 ```
 
-### Figure 3e: clustering on RSEM data after AWSN
+### Figure 3e: clustering on RSEM data after awst
 
 ```{r RSEM_AWST}
 exprData <-  awst(ddata)
@@ -606,7 +606,7 @@ mmark <- "b"
 ```
 
 
-### Figure 3f: clustering on RSEM data after AWSN
+### Figure 3f: clustering on RSEM data after awst
 
 ```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE}
 ```
@@ -677,7 +677,7 @@ mmark <- "c"
 ```
 
 
-### Figure 3g: clustering on RSEM data after AWSN
+### Figure 3g: clustering on RSEM data after awst
 
 ```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE}
 ```
@@ -746,7 +746,7 @@ mmark <- "d"
 ```{r ref.label="cluster_CPM"}
 ```
 
-### Figure 3g: clustering on RSEM data after AWSN
+### Figure 3g: clustering on RSEM data after awst
 
 ```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE}
 ```
