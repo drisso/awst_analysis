@@ -14,8 +14,8 @@ editor_options:
 
 ```{r knitr, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, 
-                      fig.height = (height_clu <- 4.5), 
-                      fig.width = (width_clu <- 11), 
+                      fig.height = 4.5, 
+                      fig.width = 11, 
                       fig.align = "center")
 ```
 
