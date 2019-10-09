@@ -6,7 +6,7 @@ The file `seqc.Rmd` contains the code to reproduce the results in Figure 2 and F
 
 The file `lgg.Rmd` contains the code to reproduce the results in Figure 4.
 
-The file `cnbc.Rmd` contains the code to reproduce the results in Figure 5.
+The file `cbmc.Rmd` contains the code to reproduce the results in Figure 5.
 
 
 ## References
