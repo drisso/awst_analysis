@@ -205,9 +205,9 @@ add_Calinski_curve <- function() {
 }
 ```
 
-# Figure 2
+# Figure 2 and Supplementary figure 1
 
-## Figure 2a: clustering on RSEM data after awst
+## Figure 2a and Supplementary figure 1a: clustering on RSEM data after awst
 
 ```{r _a.png}
 exprData <- awst(ddata)
@@ -232,15 +232,12 @@ llegend  <- c("A (UHRR)", "B (HBRR)", "C (0.75A+0.25B)", "D (0.25A+0.75B)")
 legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(a)")
 add_Calinski_curve()
-
-png(file = "seqc20190914sil_a.png", width = png_width, height = png_height)
-
+if(save_png) png(file = "seqc20190914sil_a.png", width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
-dev.off()
 ```
 
-## Figure 2b: clustering on CPM data after awst
+## Figure 2b and Supplementary figure 1b: clustering on CPM data after awst
 
 ```{r _b.png}
 exprData <-  get_CPM(ddata)
@@ -265,10 +262,9 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shi
 legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(b)")
 add_Calinski_curve()
-png(file = "seqc20190914sil_b.png", width = png_width, height = png_height)
+if(save_png) png(file = "seqc20190914sil_b.png", width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
-dev.off()
 ```
 
 ## Figure 2c: clustering on CPM data (std values)
@@ -290,12 +286,9 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shi
 legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(c)")
 add_Calinski_curve()
-png(file = "seqc20190914sil_c.png", width = png_width, height = png_height)
-ssil <- silhouette(as.numeric(clustering), ddist)
-plot(ssil, main = mmain, col = clust.col)
 ```
 
-## Figure 2d: clustering on CPM data (std values; top 100 genes)
+## Figure 2d and Supplementary figure 1d: clustering on CPM data (std values; top 100 genes)
 
 ```{r _d.png}
 exprData <-  get_CPM(ddata)
@@ -323,7 +316,7 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shi
 legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(d)")
 add_Calinski_curve()
-png(file = "seqc20190914sil_d.png", width = png_width, height = png_height)
+if(save_png) png(file = "seqc20190914sil_d.png", width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
 ```
@@ -350,12 +343,9 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shi
 legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(e)")
 add_Calinski_curve()
-png(file = "seqc20190914sil_e.png", width = png_width, height = png_height)
-ssil <- silhouette(as.numeric(clustering), ddist)
-plot(ssil, main = mmain, col = clust.col)
 ```
 
-## Figure 2f: clustering on TPM data (std values; top 100 genes)
+## Figure 2f and Supplementary figure 1f: clustering on TPM data (std values; top 100 genes)
 
 ```{r _f.png}
 tmp <- apply(exprData_TPM, 2, sd)
@@ -382,12 +372,12 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shi
 legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(f)")
 add_Calinski_curve()
-png(file = "seqc20190914sil_f.png", width = png_width, height = png_height)
+if(save_png) png(file = "seqc20190914sil_f.png", width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
 ```
 
-## Figure 2g: clustering on TPM data after awst
+## Figure 2g  and Supplementary figure 1g: clustering on TPM data after awst
 
 ```{r _g.png}
 exprData <- awst(t(exprData_TPM))
@@ -411,12 +401,12 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shi
 legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(g)")
 add_Calinski_curve()
-png(file = "seqc20190914sil_g.png", width = png_width, height = png_height)
+if(save_png) png(file = "seqc20190914sil_g.png", width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
 ```
 
-## Figure 2h: clustering on TPM data after Hart transformation
+## Figure 2h and Supplementary figure 1h: clustering on TPM data after Hart transformation
 
 ```{r _h.png}
 exprData <- get_Hart2013(exprData_TPM)
@@ -440,36 +430,12 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shi
 legend(x_legend, 1, legend=llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, "(h)")
 add_Calinski_curve()
-png(file = "seqc20190914sil_h.png", width = png_width, height = png_height)
+if(save_png) png(file = "seqc20190914sil_h.png", width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(clustering), ddist)
 plot(ssil, main = mmain, col = clust.col)
 ```
 
-## Figure of silhouttes (given the estimated partition)
-
-`r paste0(1:4, ": ", llegend)`
-
-<table>
-<tbody>
-<tr>
-<td><img src="seqc20190914sil_a.png">RSEM data with AWST</td>
-<td><img src="seqc20190914sil_e.png">TPM data with gene-wise standardization</td>
-</tr>
-<tr>
-<td><img src="seqc20190914sil_b.png">CPM data with AWST</td>
-<td><img src="seqc20190914sil_f.png">TPM data with gene-wise standardization, top 100 genes</td>
-</tr>
-<td><img src="seqc20190914sil_c.png">CPM data with gene-wise standardization</td>
-<td><img src="seqc20190914sil_g.png">TPM data with AWST</td>
-</tr>
-<tr>
-<td><img src="seqc20190914sil_d.png">CPM data with gene-wise standardization, top 100 genes</td>
-<td><img src="seqc20190914sil_h.png">TPM data with Hart transformation</td>
-</tr>
-</tbody>
-</table>
-
-# Figure 3
+# Figure 3 and Supplementary figure 2
 
 ```{r setup_of_figure_3}
 noof_topVariableGenes <- 2500
@@ -498,7 +464,7 @@ k <- kk + 1
 ```
 
 
-### Figure 3a: clustering on CPM data (std values; top 2500 genes)
+### Figure 3a and Supplementary figure 2a: clustering on CPM data (std values; top 2500 genes)
 
 ```{r exprData_CPM}
 exprData_CPM <- get_CPM(ddata)
@@ -507,7 +473,6 @@ topVariableGenes <- names(tail(apply_exprData_sd, noof_topVariableGenes))
 exprData <-  scale(exprData_CPM[, topVariableGenes])
 mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
 hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
-pprcomp <- prcomp(exprData); pprcomp$x <- scale(pprcomp$x)
 mmark <- "a"
 ```
 
@@ -530,23 +495,13 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift
 legend(x_legend, 1, legend=llegend, fill = clust.col, y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, paste0("(", mmark, ")"))
 add_Calinski_curve()
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-
-png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 plot(ssil, main = mmain, col = clust.col)
-dev.off()
-ppch <- rep(1, 108)
-ppch[which(annotation.df$noised != "white")] <- 6
-png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height)
-plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
-     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
-     xlab = "first principal component", ylab = "second principal component")
-abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
-text(-1.55, 3.9, paste0("(", mmark, ")"))
 dev.off()
 ```
 
-### Figure 3e: clustering on RSEM data after awst
+### Figure 3e and Supplementary figure 2e: clustering on RSEM data after awst
 
 ```{r RSEM_AWST, results="hide"}
 exprData <-  awst(ddata)
@@ -574,18 +529,9 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift
 legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, paste0("(", mmark, ")"))
 add_Calinski_curve()
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-
-png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 plot(ssil, main = mmain, col = clust.col)
-dev.off()
-png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height)
-plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
-     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
-     xlab = "first principal component", ylab = "second principal component")
-abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
-text(-1.55, 3.9, paste0("(", mmark, ")"))
-dev.off()
 ```
 
 ## One-third perturbed samples
@@ -601,7 +547,7 @@ for(kk in k:36) {
 k <- kk + 1
 ```
 
-### Figure 3b: clustering on CPM data (std values; top 2500 genes)
+### Figure 3b and Supplementary figure 2b: clustering on CPM data (std values; top 2500 genes)
 
 ```{r ref.label="exprData_CPM", results="hide"}
 ```
@@ -612,7 +558,7 @@ mmark <- "b"
 ```
 
 
-### Figure 3f: clustering on RSEM data after awst
+### Figure 3f and Supplementary figure 2f: clustering on RSEM data after awst
 
 ```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE, results="hide"}
 ```
@@ -647,19 +593,9 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift
 legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, paste0("(", mmark, ")"))
 add_Calinski_curve()
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-
-png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 plot(ssil, main = mmain, col = clust.col)
-dev.off()
-
-png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height)
-plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
-     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
-     xlab = "first principal component", ylab = "second principal component")
-abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
-text(-1.55, 3.9, paste0("(", mmark, ")"))
-dev.off()
 ```
 
 ## Two-third perturbed samples
@@ -675,7 +611,7 @@ for(kk in k:72) {
 k <- kk + 1
 ```
 
-### Figure 3c: clustering on CPM data (std values; top 2500 genes)
+### Figure 3c and Supplementary figure 2c: clustering on CPM data (std values; top 2500 genes)
 
 ```{r ref.label="exprData_CPM", results="hide"}
 ```
@@ -721,18 +657,9 @@ colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = 0.2, y_shift
 legend(x_legend, 1, legend = llegend, fill = levels(annotation.df$sample.col), y.intersp = 1, box.col = "white", border = "white", title = "samples", title.adj = 0)
 text(1, 0.95, paste0("(", mmark, ")"))
 add_Calinski_curve()
+if(save_png) png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-
-png(file = paste0("seqc20190914f3sil_", mmark, ".png"), width = png_width, height = png_height)
 plot(ssil, main = mmain, col = clust.col)
-dev.off()
-png(file = paste0("seqc20190914f3prcmp_", mmark, ".png"), width = png_width, height = png_height)
-plot(pprcomp$x[, 1], pprcomp$x[, 2], main = mmain, col = as.character(annotation.df$sample.col), 
-     pch = ppch, xlim = c(-1.5, 1.5), ylim = c(-6, 4), 
-     xlab = "first principal component", ylab = "second principal component")
-abline(h = 0, col = "gray50", lty = 5); abline(v = 0, col = "gray50", lty = 5)
-text(-1.55, 3.9, paste0("(", mmark, ")"))
-dev.off()
 ```
 
 ## All perturbed samples
@@ -747,7 +674,7 @@ for(kk in k:108) {
 }
 ```
 
-### Figure 3d: clustering on CPM data (std values; top 2500 genes)
+### Figure 3d and Supplementary figure 2d: clustering on CPM data (std values; top 2500 genes)
 
 ```{r ref.label="exprData_CPM", results="hide"}
 ```
@@ -757,7 +684,7 @@ mmark <- "d"
 ```{r ref.label="cluster_CPM", results="hide"}
 ```
 
-### Figure 3h: clustering on RSEM data after awst
+### Figure 3h and Supplementary figure 2h: clustering on RSEM data after awst
 
 ```{r, ref.label="RSEM_AWST", echo=FALSE, eval=TRUE, results="hide"}
 ```
@@ -766,55 +693,6 @@ mmark <- "h"
 ```
 ```{r, ref.label="plot_awst", results="hide"}
 ```
-
-## Figure of silhouttes (given the theoretical partition)
-
-`r paste0(1:4, ": ", llegend)`
-
-<table>
-<tbody>
-<tr>
-<td><img src="seqc20190914f3sil_a.png">CPM data with gene-wise standardization, top 2,500 genes</td>
-<td><img src="seqc20190914f3sil_e.png">RSEM data with AWST</td>
-</tr>
-<tr>
-<td><img src="seqc20190914f3sil_b.png">One third perturbed samples. CPM data top 2,500 genes</td>
-<td><img src="seqc20190914f3sil_f.png">One third perturbed samples. RSEM data with AWST</td>
-</tr>
-<td><img src="seqc20190914f3sil_c.png">Two thirds perturbed samples. CPM data top 2,500 genes</td>
-<td><img src="seqc20190914f3sil_g.png">Two thirds perturbed samples. RSEM data with AWST</td>
-</tr>
-<tr>
-<td><img src="seqc20190914f3sil_d.png">All perturbed samples. CPM data top 2,500 genes</td>
-<td><img src="seqc20190914f3sil_h.png">All perturbed samples. RSEM data with AWST</td>
-</tr>
-</tbody>
-</table>
-
-## Figure of principal components (colored by theoretical partition)
-
-`r paste0(1:4, ": ", llegend)`
-
-<table>
-<tbody>
-<tr>
-<td><img src="seqc20190914f3prcmp_a.png">CPM data with gene-wise standardization, top 2,500 genes</td>
-<td><img src="seqc20190914f3prcmp_e.png">RSEM data with AWST</td>
-</tr>
-<tr>
-<td><img src="seqc20190914f3prcmp_b.png">One third perturbed samples. CPM data top 2,500 genes</td>
-<td><img src="seqc20190914f3prcmp_f.png">One third perturbed samples. RSEM data with AWST</td>
-</tr>
-<td><img src="seqc20190914f3prcmp_c.png">Two thirds perturbed samples. CPM data top 2,500 genes</td>
-<td><img src="seqc20190914f3prcmp_g.png">Two thirds perturbed samples. RSEM data with AWST</td>
-</tr>
-<tr>
-<td><img src="seqc20190914f3prcmp_d.png">All perturbed samples. CPM data top 2,500 genes</td>
-<td><img src="seqc20190914f3prcmp_h.png">All perturbed samples. RSEM data with AWST</td>
-</tr>
-</tbody>
-</table>
-
 
 # Session info
 
