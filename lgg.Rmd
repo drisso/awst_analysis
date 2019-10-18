@@ -1,0 +1,375 @@
+---
+title: "Analysis of the LGG data"
+author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
+date:  'compiled on `r format(Sys.time(), "%B %d, %Y")`'
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 7
+    toc: yes
+    toc_float: yes
+    df_print: paged
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r knitr setup, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.align = "center") 
+```
+
+# Install and load `awst`
+
+```{r install_awst, eval=FALSE, echo=TRUE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("drisso/awst")
+```
+
+# Data import and cleaning
+
+The level-3 LGG data are available in the [Genomic Data Commons Data Portal](https://portal.gdc.cancer.gov). The data are also available through the R/Bioconductor packages [`curatedTCGAData`](https://www.bioconductor.org/packages/curatedTCGAData) and [`TCGABiolinks`](https://www.bioconductor.org/packages/TCGAbiolinks).
+
+For simplicity, we have included the data in this repository as an `.RData` file.
+
+We also include a tab-delimited file with some gene info useful for the GC-content normalization performed here.
+
+```{r setup}
+jobName <- "LGG20190927"
+library(awst)
+library(EDASeq)
+library(scales)
+library(survival)
+library(survminer)
+library(GGally)
+library(heatmap3)
+library(dendextend)
+library(knitr)
+###############################################
+annotation.df <- read.table("LGG_annotation.tsv", sep = "\t", row.names = 1)
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col) )
+###############################################
+save_plots <- FALSE
+png_width_large <- 1500
+png_height_large <- 750
+png_width_small <- 700
+png_height_small <- 400
+png_res <- 1/300
+```
+
+```{r _GCcontFullQuantile20180124.RData, eval=TRUE, echo=FALSE}
+if(!file.exists("TCGA20161202_LGG_GCcontFullQuantile.RData")) {
+  load("TCGA20161202_LGG_Level3.RData")
+  tmp <- strsplit(rownames(ddata), "\\|")
+  geneNames <- matrix("", ncol = 2, nrow = length(tmp))
+  rownames(geneNames) <- rownames(ddata)
+  j <- 1 
+  while(j <= length(tmp)) {
+    geneNames[j, 1] <- tmp[[j]][1]
+    geneNames[j, 2] <- tmp[[j]][2]
+    j <- j + 1
+  }
+  rownames(ddata) <- geneNames[, 2]
+  ###
+  geneInfo <- read.csv("geneInfoHG19_20180124.tsv", sep = "\t", row.names = 1)
+  length(duplicatedSymbol <- sort(names(which(table(geneInfo[, "hgnc_symbol"]) > 1))))
+  wwhich <- which(rownames(ddata) %in% rownames(geneInfo))
+  ddata <- ddata[wwhich,]
+  geneInfo <- geneInfo[rownames(ddata),]
+  sum(is.na(geneInfo[, "gcContent"]))
+  ####
+  ans <- newSeqExpressionSet(ddata, featureData = geneInfo)
+  ans <- withinLaneNormalization(ans, "gcContent", which= "full", offset = TRUE)
+  ans <- betweenLaneNormalization(ans, which = "full", offset = TRUE)
+  ########################
+  normCounts <- floor(exp(log(counts(ans) + 0.01) + offst(ans)) - 0.01)
+  length(wwhich <- which(normCounts < 0))
+  normCounts[wwhich] <- 0
+  rownames(normCounts) <- geneInfo[rownames(normCounts), "hgnc_symbol"]
+  entrez <- rownames(geneInfo)
+  geneInfo <- cbind(entrez, geneInfo)
+  rownames(geneInfo) <- geneInfo[, "hgnc_symbol"]
+  ###
+  save(normCounts, geneInfo, sample_map, file = "TCGA20161202_LGG_GCcontFullQuantile.RData")
+} else {
+  load("TCGA20161202_LGG_GCcontFullQuantile.RData")
+}
+```
+
+```{r working.RData, echo=FALSE, include=FALSE, eval=TRUE}
+if(!file.exists(paste0(jobName, "_awst13.RData"))) {
+exprData <- awst(normCounts, lambda = (lambda <- 13))
+save(exprData, jobName, lambda, file = paste0(jobName, "_awst13.RData"))
+dim(exprData <- gene_filter(exprData))#[1]   516 10212
+save(exprData, jobName, lambda, file = paste0(jobName, "_working.RData"))
+nrow_exprData <- nrow(exprData)
+ncol_exprData <- ncol(exprData)
+ddist <- dist(exprData)
+save(ddist, nrow_exprData, ncol_exprData, jobName, lambda, file = paste0(jobName, "_dist.RData"))
+hhc <- hclust(ddist, method = "ward.D2")
+aCalinski <- calinsky(hhc, gMax = 20)
+save(hhc, aCalinski, nrow_exprData, ncol_exprData, jobName, lambda, file = paste0(jobName, "_dist_hclust.RData"))
+} else {
+  load(paste0(jobName, "_dist_hclust.RData"))
+}
+```
+
+# Figure 4: the clustering
+
+```{r dendrogram, fig.width=30, fig.height=15, echo=FALSE}
+annotation.df <- annotation.df[hhc$labels,]
+clustering.col <- annotation.col[hhc$labels,]
+hhc$height <- hhc$height/max(hhc$height)
+
+mmain  <-  paste0(jobName, " lambda = ", round(lambda), " (", nrow_exprData, " samples/", ncol_exprData, " genes)")
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_plot_hclust_main.png"), width= png_width_large, height= png_height_large, res = png_res)
+  }
+plot(hhc, hang = -1, labels = FALSE, xlab = "euclidean/ward", sub = "", main = mmain)
+###
+obj <- aCalinski/max(aCalinski) * 0.5
+G <- length(obj)
+ccol <- rep("black", G)
+for (g in 2:(G - 1)) {
+  check <- obj[g - 1] < obj[g] & obj[g + 1] < obj[g]
+  if (check) 
+    ccol[g] <- "red"
+}
+xx <- floor(seq(from = 1, to = length(hhc$labels)*0.75, length.out = G))
+nums <- paste(1:G); nums[1] <- ""
+obj <- obj + 0.28
+text(xx, obj, nums, col = ccol)
+lines(xx, obj, col = "gray30", lty = "longdash")
+
+clust.colorCode <- NULL
+no_of_clusters <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-no_of_clusters+2], hhc$height[length(hhc$height)-no_of_clusters+1]))
+abline(h = hh, col = "red")
+clust5 <- clust5.col <- as.factor(cutree(hhc, k = no_of_clusters))
+levels(clust5) <- paste0("c5", levels(clust5))
+levels(clust5.col) <- c("red", "cyan", "sienna1", "blue", "magenta")
+tt <- table(clust5, clust5.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+names(colorCode) <- rownames(tt)
+
+clust.colorCode <- colorCode
+annotation.df$clust5 <- clust5
+annotation.df$clust5.col <- clustering.col$clust5 <- clust5.col
+levels(clust5) <- c("c51_IDHwt", "c52", "c53_codel", "c54_nonCodel-pp", "c55_nonCodel-gp")
+annotation.df$clust5.explanatory <- clust5
+
+tt <- table(annotation.df$clust5.explanatory, annotation.df$clust5.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+names(colorCode) <- rownames(tt)
+colorCode <- colorCode[-which(names(colorCode) %in% names(clust.colorCode))]
+clust.colorCode <- c(clust.colorCode, colorCode)
+
+tt <- table(annotation.df$clust5.explanatory)
+llegend <- paste(names(tt), " (", tt, ")", sep = "")
+ffill <- clust.colorCode[names(tt)]
+legend(380, 0.95, legend = llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "clust5", title.adj = 0)
+
+no_of_clusters <- 15
+hh <- mean(c(hhc$height[length(hhc$height)-no_of_clusters+2], hhc$height[length(hhc$height)-no_of_clusters+1]))
+clust5bis <- clust5bis.col <- as.factor(cutree(hhc, k = no_of_clusters))
+levels(clust5bis) <- paste0("c5", levels(clust5bis))
+levels(clust5bis)<- c("c51", "c52", "c531", "c532", "c541", "c55", "c541", "c533", "c541", "c55", "c55", "c542", "c51", "c51", "c52")
+tmp <- as.factor(as.character(clust5bis)); names(tmp) <- names(clust5bis); clust5bis <- tmp
+annotation.df$clust5bis <- clust5bis.col <- clust5bis
+levels(clust5bis.col) <- c("red2", "cyan", "darkseagreen", "sienna1", "steelblue", "blue", "gold", "magenta")
+annotation.df$clust5bis.col <- clustering.col$clust5bis <- clust5bis.col
+levels(clust5bis) <- c("c51_IDHwt", "c52", "c531_O2", "c532_O3", "c533_O1", "c541_G-Cimp-high", "c542_G-Cimp-low", "c55_nonCodel-gp")
+annotation.df$clust5bis.explanatory <- clust5bis
+tt <- table(clust5bis, clust5bis.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+names(colorCode) <- rownames(tt)
+colorCode <- colorCode[-which(names(colorCode) %in% names(clust.colorCode))]
+clust.colorCode <- c(clust.colorCode, colorCode)
+clustering.col <- clustering.col[, rev(colnames(clustering.col))]
+colored_bars(colors = clustering.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.16)
+tt <- table(clust5bis)
+llegend <- paste(names(tt), " (", tt, ")", sep = "")
+legend(450, 0.95, legend = llegend, fill = clust.colorCode[names(tt)], y.intersp = 1, box.col = "white", border = "white", title = "clust5bis", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.NEJM, annotation.df$exprClust.NEJM.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(1, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/NEJM", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.CELL, annotation.df$exprClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(60, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$methClust.CELL, annotation.df$methClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(110, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "methClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$CODEL.subtype, annotation.df$CODEL.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(160, 0.95, legend = gsub("kamoun_", "", rownames(tt)), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "CODEL subtype", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$original.subtype, annotation.df$original.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(210, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+```
+
+# Supplementary Figure 3: clustering on the residual features
+
+Hierarchical clustering of the 516 LGG samples with the Ward’s linkage method from an Euclidean matrix involving 8,926 features having heterogeneity less than 0.10.
+
+```{r _residual_dendrogram.pdf, fig.width=30, fig.height=15, echo=FALSE, eval=TRUE}
+load("LGG20190927_residual_dist_hclust.RData")
+hhc$height <- hhc$height/max(hhc$height)
+mmain <- paste0(jobName, " (", nrow_exprData, " samples/", ncol_exprData, " genes)")
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_plot_hclust_residual.png"), width= png_width_large, height= png_height_large, res = png_res)
+  }
+plot(hhc, hang = -1, labels = FALSE, xlab = "euclidean/ward", sub = "", main = mmain)
+colored_bars(colors = clustering.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.16)
+
+tmp <- apply(tt <- table(annotation.df$exprClust.NEJM, annotation.df$exprClust.NEJM.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(90, 0.99, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/NEJM", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.CELL, annotation.df$exprClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(135, 0.99, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$methClust.CELL, annotation.df$methClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(182, 0.99, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "methClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$CODEL.subtype, annotation.df$CODEL.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(230, 0.99, legend = gsub("kamoun_", "", rownames(tt)), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "CODEL subtype", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$original.subtype, annotation.df$original.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(270, 0.99, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+#
+tt <- table(annotation.df$clust5.explanatory)
+legend(330, 0.99, legend=names(tt), fill = clust.colorCode[names(tt)], y.intersp = 1, box.col = "white", border = "white", title = "clust5", title.adj = 0)
+#
+tt <- table(annotation.df$clust5bis.explanatory)
+legend(385, 0.99, legend=names(tt), fill = clust.colorCode[names(tt)], y.intersp = 1, box.col = "white", border = "white", title = "clust5bis", title.adj = 0)
+```
+
+# Supplementary Figure 4
+
+Kaplan-Meyer estimates of the survival curves associated with clust5 partition,
+based on the overall survival time. The log-rank test returns p-value $\leq 2.2 \cdot 10^{-16}$.
+
+```{r, fig.width=20, fig.height=11, fig.align = "center"}
+tmp.df <- annotation.df
+notIsNA <- which(!is.na(Surv(tmp.df$surv_time, tmp.df$surv_status)))
+tmp.df <- tmp.df[notIsNA,]
+coxph_H1 <- coxph(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5.explanatory, data = tmp.df)
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_surv_clust5.png"), width= png_width_small, height= png_height_small, res = png_res)
+  }
+suppressWarnings(ggadjustedcurves(coxph_H1, data = tmp.df, individual.curves = TRUE, variable = "clust5.explanatory",  method = "marginal", palette = clust.colorCode[levels(tmp.df$clust5.explanatory)]) + xlab("time (months)"))
+tmp <- survdiff(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5.explanatory, data = tmp.df)
+names(tmp$n) <- gsub("clust5.explanatory=", "", names(tmp$n))
+tmp
+```
+
+# Supplementary Figure 5
+
+Kaplan-Meyer estimates of the survival curves associated with the two non-codel subsets c54 and c55,
+based on the overall survival time. The log-rank test returns p-value = $0.2$.
+
+```{r, fig.width=20, fig.height=11, fig.align = "center"}
+tmp.df <- annotation.df
+tmp.df <- tmp.df[tmp.df$clust5 == "c54" | tmp.df$clust5 == "c55",]
+notIsNA <- which(!is.na(Surv(tmp.df$surv_time, tmp.df$surv_status)))
+tmp.df <- tmp.df[notIsNA,]
+tmp.df$clust5.explanatory <- factor(tmp.df$clust5.explanatory)
+coxph_H1 <- coxph(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5.explanatory, data = tmp.df)
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_surv_clust5nonCodel.png"), width= png_width_small, height= png_height_small, res = png_res)
+  }
+suppressWarnings(ggadjustedcurves(coxph_H1, data = tmp.df, individual.curves = TRUE, variable = "clust5.explanatory",  method = "marginal", palette = clust.colorCode[levels(tmp.df$clust5.explanatory)]) + xlab("time (months)"))
+tmp <- survdiff(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5.explanatory, data = tmp.df)
+names(tmp$n) <- gsub("clust5.explanatory=", "", names(tmp$n))
+tmp
+```
+
+# Supplementary Figure 6
+
+Kaplan-Meyer estimates of the survival curves associated with the subsets
+c533/O1, c531/O2, and c532/O3 (Kamoun and others, 2016) in c53 (IDHmut-CODELS), based on the
+overall survival time. The log-rank test returns p-value = 0.02.
+
+```{r}
+tmp.df <- annotation.df
+tmp.df <- tmp.df[tmp.df$clust5.explanatory == "c53_codel",]
+notIsNA <- which(!is.na(Surv(tmp.df$surv_time, tmp.df$surv_status)))
+tmp.df <- tmp.df[notIsNA,]
+tmp.df$clust5bis.explanatory <- factor(tmp.df$clust5bis.explanatory)
+coxph_H1 <- coxph(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5bis.explanatory, data = tmp.df)
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_surv_clust5bisCodel.png"), width= png_width_small, height= png_height_small, res = png_res)
+  }
+suppressWarnings(ggadjustedcurves(coxph_H1, data = tmp.df, individual.curves = TRUE, variable = "clust5bis.explanatory",  method = "marginal", palette = clust.colorCode[levels(tmp.df$clust5bis.explanatory)])+ xlab("time (months)"))
+tmp <- survdiff(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5bis.explanatory, data = tmp.df)
+names(tmp$n) <- gsub("clust5bis.explanatory=", "", names(tmp$n))
+tmp
+```
+
+# Supplementary Figure 7 
+
+Kaplan-Meyer estimates of the survival curves associated with the two subsets c541 (G-Cimp-High) ant c542 (G-Cimp-Low), based on the overall survival time. The log-rank test returns p-value = $2\cdot 10^{-4}$.
+
+```{r}
+tmp.df <- annotation.df
+tmp.df <- tmp.df[tmp.df$clust5 == "c54",]
+notIsNA <- which(!is.na(Surv(tmp.df$surv_time, tmp.df$surv_status)))
+tmp.df <- tmp.df[notIsNA,]
+tmp.df$clust5bis.explanatory <- factor(tmp.df$clust5bis.explanatory)
+coxph_H1 <- coxph(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5bis.explanatory, data = tmp.df)
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_surv_clust5bisGCIMP.png"), width= png_width_small, height= png_height_small, res = png_res)
+  }
+suppressWarnings(ggadjustedcurves(coxph_H1, data = tmp.df, individual.curves = TRUE, variable = "clust5bis.explanatory",  method = "marginal", palette = clust.colorCode[levels(tmp.df$clust5bis.explanatory)])+ xlab("time (months)"))
+tmp <- survdiff(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5bis.explanatory, data = tmp.df)
+names(tmp$n) <- gsub("clust5bis.explanatory=", "", names(tmp$n))
+tmp
+```
+
+# Supplementary Figure 8
+
+Kaplan-Meyer estimates of the survival curves associated with clust5bis partition,
+based on the overall survival time. The log-rank test returns p-value  $\leq 2.2\cdot 10^{-16}$.
+
+```{r, fig.width=20, fig.height=11, fig.align = "center"}
+tmp.df <- annotation.df
+notIsNA <- which(!is.na(Surv(tmp.df$surv_time, tmp.df$surv_status)))
+tmp.df <- tmp.df[notIsNA,]
+coxph_H1 <- coxph(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5bis.explanatory, data = tmp.df)
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_surv_clust5bis.png"), width= png_width_small, height= png_height_small, res = png_res)
+  }
+suppressWarnings(ggadjustedcurves(coxph_H1, data = tmp.df, individual.curves = TRUE, variable = "clust5bis.explanatory",  method = "marginal", palette = clust.colorCode[levels(tmp.df$clust5bis.explanatory)]) + xlab("time (months)"))
+tmp <- survdiff(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5bis.explanatory, data = tmp.df)
+names(tmp$n) <- gsub("clust5bis.explanatory=", "", names(tmp$n))
+tmp
+```
