@@ -36,7 +36,7 @@ For simplicity, we have included the data in this repository as an `.RData` file
 
 We also include a tab-delimited file with some gene info useful for the GC-content normalization performed here.
 
-```{r setup}
+```{r setup, message=FALSE}
 jobName <- "LGG20190927"
 library(awst)
 library(EDASeq)
@@ -58,6 +58,8 @@ png_height_large <- 750
 png_width_small <- 700
 png_height_small <- 400
 png_res <- 1/300
+
+source("functions.R")
 ```
 
 ```{r _GCcontFullQuantile20180124.RData, eval=TRUE, echo=FALSE}
@@ -100,7 +102,7 @@ if(!file.exists("TCGA20161202_LGG_GCcontFullQuantile.RData")) {
 ```
 
 ```{r working.RData, echo=FALSE, include=FALSE, eval=TRUE}
-if(!file.exists(paste0(jobName, "_awst13.RData"))) {
+if(!file.exists(paste0(jobName, "_dist_hclust.RData"))) {
 exprData <- awst(normCounts, lambda = (lambda <- 13))
 save(exprData, jobName, lambda, file = paste0(jobName, "_awst13.RData"))
 dim(exprData <- gene_filter(exprData))#[1]   516 10212
@@ -110,7 +112,7 @@ ncol_exprData <- ncol(exprData)
 ddist <- dist(exprData)
 save(ddist, nrow_exprData, ncol_exprData, jobName, lambda, file = paste0(jobName, "_dist.RData"))
 hhc <- hclust(ddist, method = "ward.D2")
-aCalinski <- calinsky(hhc, gMax = 20)
+aCalinski <- calinski(hhc, gMax = 20)
 save(hhc, aCalinski, nrow_exprData, ncol_exprData, jobName, lambda, file = paste0(jobName, "_dist_hclust.RData"))
 } else {
   load(paste0(jobName, "_dist_hclust.RData"))
@@ -226,13 +228,27 @@ legend(210, 0.95, legend = rownames(tt), fill = ffill,
 Hierarchical clustering of the 516 LGG samples with the Ward’s linkage method from an Euclidean matrix involving 8,926 features having heterogeneity less than 0.10.
 
 ```{r _residual_dendrogram.pdf, fig.width=30, fig.height=15, echo=FALSE, eval=TRUE}
-load("LGG20190927_residual_dist_hclust.RData")
+if(!file.exists("LGG20190927_residual_dist_hclust.RData")) {
+  load("LGG20190927_working.RData")
+  usedGenes <- colnames(exprData)
+  load("LGG20190927_awst13.RData")
+  dim(exprData <- exprData[, setdiff(colnames(exprData), usedGenes)])#[1]  516 8926
+  nrow_exprData <- nrow(exprData)
+  ncol_exprData <- ncol(exprData)
+  ddist <- dist(exprData)
+  save(ddist, nrow_exprData, ncol_exprData, jobName, lambda, file = paste0(jobName, "_residual_dist.RData"))
+  hhc <- hclust(ddist, method = "ward.D2")
+  aCalinski <- calinski(hhc, gMax = 20)
+  save(hhc, aCalinski, nrow_exprData, ncol_exprData, jobName, lambda, file = paste0(jobName, "_residual_dist_hclust.RData"))
+} else {
+  load("LGG20190927_residual_dist_hclust.RData")
+}
 hhc$height <- hhc$height/max(hhc$height)
 mmain <- paste0(jobName, " (", nrow_exprData, " samples/", ncol_exprData, " genes)")
 if(save_plots) {
   mmain <- ""
   png(paste0(jobName, "_plot_hclust_residual.png"), width= png_width_large, height= png_height_large, res = png_res)
-  }
+}
 plot(hhc, hang = -1, labels = FALSE, xlab = "euclidean/ward", sub = "", main = mmain)
 colored_bars(colors = clustering.col, dend = as.dendrogram(hhc), y_scale = -0.15, y_shift = -0.16)
 
@@ -372,4 +388,10 @@ suppressWarnings(ggadjustedcurves(coxph_H1, data = tmp.df, individual.curves = T
 tmp <- survdiff(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ clust5bis.explanatory, data = tmp.df)
 names(tmp$n) <- gsub("clust5bis.explanatory=", "", names(tmp$n))
 tmp
+```
+
+# Session info
+
+```{r}
+sessionInfo()
 ```
