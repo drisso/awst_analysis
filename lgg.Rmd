@@ -63,8 +63,8 @@ source("functions.R")
 ```
 
 ```{r _GCcontFullQuantile20180124.RData, eval=TRUE, echo=FALSE}
-if(!file.exists("TCGA20161202_LGG_GCcontFullQuantile.RData")) {
-  load("TCGA20161202_LGG_Level3.RData")
+if(!file.exists("Legacy_TCGA_LGG_GCcontFullQuantile.RData")) {
+  load("Legacy_TCGA_LGG_Level3.RData")
   tmp <- strsplit(rownames(ddata), "\\|")
   geneNames <- matrix("", ncol = 2, nrow = length(tmp))
   rownames(geneNames) <- rownames(ddata)
@@ -95,9 +95,9 @@ if(!file.exists("TCGA20161202_LGG_GCcontFullQuantile.RData")) {
   geneInfo <- cbind(entrez, geneInfo)
   rownames(geneInfo) <- geneInfo[, "hgnc_symbol"]
   ###
-  save(normCounts, geneInfo, sample_map, file = "TCGA20161202_LGG_GCcontFullQuantile.RData")
+  save(normCounts, geneInfo, sample_map, file = "Legacy_TCGA_LGG_GCcontFullQuantile.RData")
 } else {
-  load("TCGA20161202_LGG_GCcontFullQuantile.RData")
+  load("Legacy_TCGA_LGG_GCcontFullQuantile.RData")
 }
 ```
 
