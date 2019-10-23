@@ -1,5 +1,5 @@
 ---
-title: "Analysis of the CBMC data"
+title: "Code to reproduce the analyses of the AWST paper: Analysis of the CBMC data"
 author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
 date:  '`r format(Sys.time(), "%d %B, %Y")`'
 output: 
@@ -15,6 +15,12 @@ editor_options:
 ```{r knitr, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.height = 4.5, fig.width =  11, fig.align = "center")
 ```
+
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2019). Within-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+
+This file belongs to the repository: https://github.com/drisso/awst_analysis.
+
+The code is released with license GPL v3.0.
 
 # Install and load `awst`
 
@@ -45,6 +51,8 @@ The data are available on GEO with the following accession number.
 In the following chunks of code, we arrange a data-frame where each of the cell are annotated, and the annotations are coded as colors.
 
 We mostly follow [the original article](https://www.nature.com/articles/nmeth.4380) for data preprocessing.
+
+Note that here we download and read the data directly from the remote gzipped files available in GEO. In some cases, with unstable internet connections, the following chunks may not work. In such cases, we suggest to "manually" downaload the data using the links provided above and read the data in R from a local copy of the file.
 
 ## ADT and annotation
 
@@ -137,7 +145,9 @@ if(!file.exists("expression.RData")) {
 
 ## Clustering and dimensionality reduction
 
-```{r working matrices}
+Note that due to changes to the pseudo-random number generator in R 3.6, the behavior of `set.seed()` has changed. Hence, the t-SNE and UMAP plots below are not exact copies of the ones in the paper, obtained with an older version of R. However, the main features of the datasets are preserved. 
+
+```{r working matrices, warning=FALSE}
 if(!file.exists("expression_umap_2d.RData")) {
 nrow_exprData <- nrow(exprData)
 ncol_exprData <- ncol(exprData)
