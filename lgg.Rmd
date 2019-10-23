@@ -1,5 +1,5 @@
 ---
-title: "Analysis of the LGG data"
+title: "Code to reproduce the analyses of the AWST paper: Analysis of the LGG data"
 author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
 date:  'compiled on `r format(Sys.time(), "%B %d, %Y")`'
 output: 
@@ -19,6 +19,12 @@ knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
 knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.align = "center") 
 ```
 
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2019). Within-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+
+This file belongs to the repository: https://github.com/drisso/awst_analysis.
+
+The code is released with license GPL v3.0.
+
 # Install and load `awst`
 
 ```{r install_awst, eval=FALSE, echo=TRUE}
@@ -29,6 +35,8 @@ BiocManager::install("drisso/awst")
 ```
 
 # Data import and cleaning
+
+For this analysis, we used the collection of 516 samples from the TCGA legacy repository, specifically the RSEM estimates of 20{,}531 gene expressions.
 
 The level-3 LGG data are available in the [Genomic Data Commons Data Portal](https://portal.gdc.cancer.gov). The data are also available through the R/Bioconductor packages [`curatedTCGAData`](https://www.bioconductor.org/packages/curatedTCGAData) and [`TCGABiolinks`](https://www.bioconductor.org/packages/TCGAbiolinks).
 
