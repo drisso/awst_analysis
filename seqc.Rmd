@@ -1,5 +1,5 @@
 ---
-title: "Analysis of the SEQC data"
+title: "Code to reproduce the analyses of the AWST paper: Analysis of the SEQC data"
 author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
 date:  '`r format(Sys.time(), "%d %B, %Y")`'
 output: 
@@ -11,6 +11,12 @@ fontsize: 11pt
 editor_options: 
   chunk_output_type: console
 ---
+
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2019). Within-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+
+This file belongs to the repository: https://github.com/drisso/awst_analysis.
+
+The code is released with license GPL v3.0.
 
 ```{r knitr, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, 
