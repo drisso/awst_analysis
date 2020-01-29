@@ -231,7 +231,7 @@ legend(210, 0.95, legend = rownames(tt), fill = ffill,
        border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
 ```
 
-# Supplementary Figure 3: clustering on the residual features
+# Supplementary Figure 4: clustering on the residual features
 
 Hierarchical clustering of the 516 LGG samples with the Ward’s linkage method from an Euclidean matrix involving 8,926 features having heterogeneity less than 0.10.
 
@@ -292,7 +292,7 @@ tt <- table(annotation.df$clust5bis.explanatory)
 legend(385, 0.99, legend=names(tt), fill = clust.colorCode[names(tt)], y.intersp = 1, box.col = "white", border = "white", title = "clust5bis", title.adj = 0)
 ```
 
-# Supplementary Figure 4
+# Supplementary Figure 5
 
 Kaplan-Meyer estimates of the survival curves associated with clust5 partition,
 based on the overall survival time. The log-rank test returns p-value $\leq 2.2 \cdot 10^{-16}$.
@@ -312,7 +312,7 @@ names(tmp$n) <- gsub("clust5.explanatory=", "", names(tmp$n))
 tmp
 ```
 
-# Supplementary Figure 5
+# Supplementary Figure 6
 
 Kaplan-Meyer estimates of the survival curves associated with the two non-codel subsets c54 and c55,
 based on the overall survival time. The log-rank test returns p-value = $0.2$.
@@ -334,7 +334,7 @@ names(tmp$n) <- gsub("clust5.explanatory=", "", names(tmp$n))
 tmp
 ```
 
-# Supplementary Figure 6
+# Supplementary Figure 7
 
 Kaplan-Meyer estimates of the survival curves associated with the subsets
 c533/O1, c531/O2, and c532/O3 (Kamoun and others, 2016) in c53 (IDHmut-CODELS), based on the
@@ -357,7 +357,7 @@ names(tmp$n) <- gsub("clust5bis.explanatory=", "", names(tmp$n))
 tmp
 ```
 
-# Supplementary Figure 7 
+# Supplementary Figure 8
 
 Kaplan-Meyer estimates of the survival curves associated with the two subsets c541 (G-Cimp-High) ant c542 (G-Cimp-Low), based on the overall survival time. The log-rank test returns p-value = $2\cdot 10^{-4}$.
 
@@ -378,7 +378,7 @@ names(tmp$n) <- gsub("clust5bis.explanatory=", "", names(tmp$n))
 tmp
 ```
 
-# Supplementary Figure 8
+# Supplementary Figure 9
 
 Kaplan-Meyer estimates of the survival curves associated with clust5bis partition,
 based on the overall survival time. The log-rank test returns p-value  $\leq 2.2\cdot 10^{-16}$.
