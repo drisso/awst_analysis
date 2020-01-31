@@ -73,3 +73,19 @@ add_Calinski_curve <- function() {
   text(xx, obj, nums, col = ccol)
   lines(xx, obj, col = "gray30", lty = "longdash")
 }
+vCramer <- function (x, y) 
+{
+  ans <- chisq.test(x, y)
+  ans$vCramer <- ans$statistic/sum(ans$observed)
+  ans$vCramer <- sqrt(ans$vCramer/(min(dim(ans$observed) - 
+                                         1)))
+  class(ans) <- "vCramer"
+  ans
+}
+print.vCramer <- function(obj) {
+  cat(obj$method)
+  str <- paste0("\nX-stat = ", round(obj$statistic, 4), " (vCramer = ", round(100*obj$vCramer, 2), "%), ")
+  str <- paste0(str, "df = ", obj$parameter, ", p-value = ", format(obj$p.value, digits = 6))
+  cat(str)
+}
+
