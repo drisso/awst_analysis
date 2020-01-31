@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
 knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.align = "center") 
 ```
 
-Here we show the code to reproduce the analyses of: Risso and Pagnotta (2019). Within-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2020). Per-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
 
 This file belongs to the repository: https://github.com/drisso/awst_analysis.
 
