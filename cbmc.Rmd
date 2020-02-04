@@ -16,7 +16,7 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, fig.height = 4.5, fig.width =  11, fig.align = "center")
 ```
 
-Here we show the code to reproduce the analyses of: Risso and Pagnotta (2019). Within-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2020). Per-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
 
 This file belongs to the repository: https://github.com/drisso/awst_analysis.
 
@@ -123,20 +123,14 @@ if(!file.exists("expression.RData")) {
   # restrict the collection of cells to those cells having at least 500 observed features
   sum(no_of_detected_gene_per_sample > 500) # 7613
   dim(ddata <- ddata[no_of_detected_gene_per_sample > 500,])#[1]  7613 17014
-  ###
-  no_of_different_intensities <- apply(ddata, 1, function(x) length(table(x)))
-  fivenum(no_of_different_intensities)#  9     17   20     24    105 
-  # restrict the collection of cells to those cells having at least 20 different intensities across the featutures
-  dim(ddata <- ddata[which(no_of_different_intensities >= 20), ])#[1] 4123 17014
-  ###
   # apply the full quantile normalization 
   normCounts <- EDASeq::betweenLaneNormalization(t(ddata), which = "full", round = FALSE)
   save(normCounts, file = "normCounts.RData")
   ###
   # apply the AWS-transformation 
   library(awst)
-  dim(exprData <- awst(normCounts, poscount = TRUE, full_quantile = TRUE)) #[1]  4123 17014
-  dim(exprData <- gene_filter(exprData, nBins = 30, heterogeneity_threshold = 0.05)) #[1] 4123  330
+  dim(exprData <- awst(normCounts, poscount = TRUE, full_quantile = TRUE)) #[1]  7613 17014
+  dim(exprData <- gene_filter(exprData, nBins = 30, shannon_cutoff = 0.1)) #[1] 7613  205
   save(exprData, file = "expression.RData")
 } else {
   load("expression.RData")
@@ -203,30 +197,32 @@ ffill2 <- names(table(annotation.df$CD3.col))
 clustering.prefix <- "CBMC"; short.prefix <- "CBMC"
 clustering.df <- data.frame(cell = annotation.df$cell)
 rownames(clustering.df) <- clustering.df$cell
-
+#clustering.df <- clustering.df[hhc$labels,]
 ############
+#load(paste0(jobName, "_dist_hclust.RData"))
 mmain  <-  paste0("CBMC study (", nrow_exprData, " cells/", ncol_exprData, " genes)")
 if(save_plots) {
-  mmain <- ""; png("main_dendrogram.png", width= png_width_large, height= png_height_large, res = png_res)
+  mmain <- ""
+  png(paste0(jobName, "_main_dendrogram.png"), width= png_width_large, height= png_height_large, res = png_res)
 }
 hhc$height <- hhc$height/max(hhc$height)
-
+#mmain = paste0(jobName, " (", nrow_exprData, " cells/", ncol_exprData, " genes)")
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 ###
-wwhere <- 10
+wwhere <- 6
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-
+abline(h = hh, col = "red")
 tmp <- tmp_ <- as.factor(cutree(hhc, k = wwhere))
-
-levels(tmp) <- c( "1", "1", "3", "4", "5", "6", "6", "8","4", "5")
+#table(tmp)
+#levels(tmp) <- c( "1", "1", "3", "4", "5", "6", "6", "8","4", "5")
 wwhere <- length(unique(levels(tmp)))
 clusteringWhere <- paste0(clustering.prefix, wwhere)
 clusteringWhere.col <- paste0(clusteringWhere, ".col")
 assign(clusteringWhere.col, tmp)
-if(wwhere < 10) levels(tmp) <- paste0(short.prefix, wwhere, 1:wwhere) else levels(tmp) <- paste0(short.prefix, wwhere, c(paste(1:9), letters[1:(wwhere-9)]))
+levels(tmp) <- paste0(short.prefix, wwhere, 1:wwhere)
 assign(clusteringWhere, tmp)
-levels(tmp) <- c("black", "red", "green3", "blue", "cyan", "magenta")
-
+levels(tmp) <- palette()[1:wwhere]
+#table(tmp_, tmp)
 assign(clusteringWhere.col, tmp)
 tt <- table(get(clusteringWhere), get(clusteringWhere.col))
 colorCode <- colnames(tt)[apply(tt, 1, which.max)]
@@ -238,14 +234,15 @@ clustering.df$tmp.explanatory <- clustering.df$tmp
 clustering.df$tmp.col <- get(clusteringWhere.col)
 ncol_ <- ncol(clustering.df)
 colnames(clustering.df)[(ncol_-2):ncol_] <- c(clusteringWhere, paste0(clusteringWhere, ".explanatory"), clusteringWhere.col)
-levels(clustering.df[, paste0(clusteringWhere, ".explanatory")]) <- c("CBMC1 - T Cell", "CBMC2 - B Cell", "CBMC3 - unclear", "CBMC4 - Monocyte", "CBMC5 - myeloid DC", "CBMC6 - plasmacytoid DC")
+levels(clustering.df[, paste0(clusteringWhere, ".explanatory")]) <- c("CBMC1 - T Cell", "CBMC2 - B Cell", "CBMC3 - unclear", "CBMC4 - Natutal Killer", "CBMC5 - Monocyte", "CBMC6 - myeloid DC")
+
 
 annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
 colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
-annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c",  "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
 annotation.col$CBMC <- clustering.df[, ncol(clustering.df)]
 
-colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.17, y_shift = 0.015)
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
 save(clustering.df, clust.colorCode, file = "clustering.RData")
 
 tt <- table(clustering.df[, ncol(clustering.df)-1])
@@ -253,10 +250,12 @@ pct <- paste0(round(100*tt/sum(tt), 1), "%")
 llegend <- paste(names(tt), " (", tt, "; ", pct, ")", sep = "")
 tt <- table(clustering.df[, ncol(clustering.df)-1], clustering.df[, ncol(clustering.df)])
 ffill <- colnames(tt)[apply(tt, 1, which.max)]
-legend(700, .99, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1470, .95, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
 
 color.bar3 <- function(x_pos, y_pos, lut, min, max=-min, nticks=11, ticks=seq(min, max, len=nticks), title='', values = NULL) {
     scale = (max-min)/length(lut)*0.3
+#    plot(c(0,10), c(min,max), type='n', bty='n', xaxt='n', xlab='', yaxt='n', ylab='', main=title, add = TRUE)
+    #axis(2, ticks, las=1)
     for (i in 1:length(lut)) {
       y_low  <- (i-1)*scale + y_pos
     	y_high <-  y_low + scale
@@ -264,8 +263,8 @@ color.bar3 <- function(x_pos, y_pos, lut, min, max=-min, nticks=11, ticks=seq(mi
     	text(x_pos+.05, (y_low + y_high)/2, values[i], adj = -2)
     }	
 }
-color.bar3(4000, 0.65, ffill2, -0.6, values = vvalues)
-text(4045, 0.63, "Marker's level")
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
 text(1, 1, "(a)")
 ```
 
