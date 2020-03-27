@@ -12,6 +12,13 @@ get_TPM <- function(gene_per_sample_matrix, gene_length) {
   invisible(ans)
 }
 ###
+get_FPKM <- function (gene_per_sample_matrix, gene_length) {
+  tmp <- 1e+06/apply(gene_per_sample_matrix, 2, sum, na.rm = TRUE)
+  ans <- 1000 * gene_per_sample_matrix/gene_length
+  ans <- tmp * t(ans)
+  invisible(ans)
+}
+###
 get_Hart2013 <- function(sample_per_gene_TPM_matrix) {
   ans <- sample_per_gene_TPM_matrix
   for(i in 1:nrow(sample_per_gene_TPM_matrix)) {
@@ -59,17 +66,17 @@ calinski <- function (hhc, dist = NULL, gMax = round(1 + 3.3 * log(length(hhc$or
   return(ans)
 }
 ###
-add_Calinski_curve <- function() {
-  obj <- aCalinski/max(aCalinski) * 0.6
+add_Calinski_curve <- function(height = 0.6, from = 5, to = 70, shift = 0.25) {
+  obj <- aCalinski/max(aCalinski) * height
   G <- length(obj)
   ccol <- rep("black", G)
   for (g in 2:(G - 1)) {
     check <- obj[g - 1] < obj[g] & obj[g + 1] < obj[g]
     if (check) ccol[g] <- "red"
   }
-  xx <- floor(seq(from = 5, to = 70, length.out = length(aCalinski)))
+  xx <- floor(seq(from = from, to = to, length.out = length(aCalinski)))
   nums <- paste(1:G); nums[1] <- ""
-  obj <- obj + 0.25
+  obj <- obj + shift
   text(xx, obj, nums, col = ccol)
   lines(xx, obj, col = "gray30", lty = "longdash")
 }
