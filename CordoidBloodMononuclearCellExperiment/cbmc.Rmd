@@ -32,12 +32,15 @@ BiocManager::install("drisso/awst")
 ```
 
 ```{r setup, message=FALSE}
+rm(list = ls())
 library(readr)
 library(awst)
 library(EDASeq)
 library(Rtsne)
 library(umap)
 library(dendextend)
+setwd("~/Dropbox/AWST/gitHub/cbmc20200131") # 20200318
+jobName <- "CBMC20200318"
 ```
 
 # Data import and cleaning
@@ -81,9 +84,7 @@ if(!file.exists("annotation.RData")) {
     colnames(annotation.df)[ncol(annotation.df)] <- paste0(colnames(ttable)[j], ".col")
   }
   save(annotation.df, file = "annotation.RData")
-} else {
-  load("annotation.RData")
-}
+} else load("annotation.RData")
 ```
 
 
@@ -95,7 +96,6 @@ Before applying normalization and AWST, we filtered out cells that did not met t
 
 * filter out cells not having at least 500 observed features.
 
-* filter out cells not having at least 20 different intensities across the features.
 
 ```{r Level3}
 if(!file.exists("Level3.RData")) {
@@ -107,16 +107,14 @@ ddata <- as.data.frame(ddata)
 rownames(ddata) <- gsub("HUMAN_", "", ddata$X1)
 ddata <- as.matrix(ddata[,-1])
 save(ddata, file = "Level3.RData")
-} else {
-  load("Level3.RData")
-}
+} else if(!file.exists("normCounts.RData")) load("Level3.RData")
 ```
 
 ## Apply AWST
 
 ```{r expression.RData}
-if(!file.exists("expression.RData")) {
-  ddata <- t(ddata)
+if(!file.exists("normCounts.RData")) {
+  dim(ddata <- t(ddata)) # 7985 17014
   ###
   no_of_detected_gene_per_sample <- rowSums(ddata > 0) 
   fivenum(no_of_detected_gene_per_sample)#  10      638      739      873         4833 
@@ -126,15 +124,14 @@ if(!file.exists("expression.RData")) {
   # apply the full quantile normalization 
   normCounts <- EDASeq::betweenLaneNormalization(t(ddata), which = "full", round = FALSE)
   save(normCounts, file = "normCounts.RData")
-  ###
-  # apply the AWS-transformation 
-  library(awst)
-  dim(exprData <- awst(normCounts, poscount = TRUE, full_quantile = TRUE)) #[1]  7613 17014
-  dim(exprData <- gene_filter(exprData, nBins = 30, shannon_cutoff = 0.1)) #[1] 7613  205
+} else if(!file.exists("expression.RData")) load("normCounts.RData")
+  
+# apply the AWS-transformation 
+if(!file.exists("expression.RData")) {
+  exprData <- awst(normCounts, poscount = TRUE, full_quantile = TRUE)
+  dim(exprData <- gene_filter(exprData)) #[1] 7613  230
   save(exprData, file = "expression.RData")
-} else {
-  load("expression.RData")
-}
+} else load("expression.RData")
 ```
 
 ## Clustering and dimensionality reduction
@@ -142,29 +139,35 @@ if(!file.exists("expression.RData")) {
 Note that due to changes to the pseudo-random number generator in R 3.6, the behavior of `set.seed()` has changed. Hence, the t-SNE and UMAP plots below are not exact copies of the ones in the paper, obtained with an older version of R. However, the main features of the datasets are preserved. 
 
 ```{r working matrices, warning=FALSE}
+if(!file.exists("expression_dist_hclust.RData")) {
+  nrow_exprData <- nrow(exprData)
+  ncol_exprData <- ncol(exprData)
+  ddist <- dist(exprData)
+#  save(ddist, nrow_exprData, ncol_exprData, file = "expression_dist.RData")
+  hhc <- hclust(ddist, method = "ward.D2")
+  save(hhc, nrow_exprData, ncol_exprData, file = "expression_dist_hclust.RData")
+} else load("expression_dist_hclust.RData")
+
+if(!file.exists("expression_prcomp.RData")) {
+  pprcomp <- prcomp(exprData)
+  pprcomp$x <- pprcomp$x[, 1:10]
+  pprcomp$rotation <- pprcomp$rotation[, 1:10]
+  save(pprcomp, file = "expression_prcomp.RData")
+} else load("expression_prcomp.RData")
+
+if(!file.exists("expression_Rtsne_2d.RData")) {
+  set.seed(2019) # needed to get the figure in the paper
+  ans_Rtsne <- Rtsne(exprData, pca = FALSE) # Run TSNE
+  save(ans_Rtsne, file = "expression_Rtsne_2d.RData")
+} else load("expression_Rtsne_2d.RData")
+
 if(!file.exists("expression_umap_2d.RData")) {
-nrow_exprData <- nrow(exprData)
-ncol_exprData <- ncol(exprData)
-ddist <- dist(exprData)
-save(ddist, nrow_exprData, ncol_exprData, file = "expression_dist.RData")
-
-hhc <- hclust(ddist, method = "ward.D2")
-save(hhc, nrow_exprData, ncol_exprData, file = "expression_dist_hclust.RData")
-
-pprcomp <- prcomp(exprData)
-pprcomp$x <- pprcomp$x[, 1:10]
-pprcomp$rotation <- pprcomp$rotation[, 1:10]
-save(pprcomp, file = "expression_prcomp.RData")
-
-set.seed(2019) # needed to get the figure in the paper
-ans_Rtsne <- Rtsne(exprData, pca = FALSE, perplexity = 250) # Run TSNE
-save(ans_Rtsne, file = "expression_Rtsne_2d.RData")
-
-set.seed(2019) # needed to get the figure in the paper
-ans_umap <- umap(exprData)
-save(ans_umap, file = "expression_umap_2d.RData")
-}
+  set.seed(2019) # needed to get the figure in the paper
+  ans_umap <- umap(exprData)
+  save(ans_umap, file = "expression_umap_2d.RData")
+} else load("expression_umap_2d.RData")
 ```
+
 
 ```{r figure_setup, eval=TRUE}
 load("annotation.RData")
@@ -172,8 +175,8 @@ load("expression_dist_hclust.RData")
 annotation.df <- annotation.df[hhc$labels,]
 ###############
 save_plots <- FALSE
-png_width_large <- 1500
-png_height_large <- 750
+png_width_large <- 2100
+png_height_large <- 500
 png_width_small <- width_png <- 700
 png_height_small <- 700
 png_res <- 1/300
@@ -203,7 +206,8 @@ rownames(clustering.df) <- clustering.df$cell
 mmain  <-  paste0("CBMC study (", nrow_exprData, " cells/", ncol_exprData, " genes)")
 if(save_plots) {
   mmain <- ""
-  png(paste0(jobName, "_main_dendrogram.png"), width= png_width_large, height= png_height_large, res = png_res)
+  png(paste0(jobName, "_expression_dist_hclust.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
 }
 hhc$height <- hhc$height/max(hhc$height)
 #mmain = paste0(jobName, " (", nrow_exprData, " cells/", ncol_exprData, " genes)")
@@ -250,7 +254,7 @@ pct <- paste0(round(100*tt/sum(tt), 1), "%")
 llegend <- paste(names(tt), " (", tt, "; ", pct, ")", sep = "")
 tt <- table(clustering.df[, ncol(clustering.df)-1], clustering.df[, ncol(clustering.df)])
 ffill <- colnames(tt)[apply(tt, 1, which.max)]
-legend(1470, .95, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1, .85, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
 
 color.bar3 <- function(x_pos, y_pos, lut, min, max=-min, nticks=11, ticks=seq(min, max, len=nticks), title='', values = NULL) {
     scale = (max-min)/length(lut)*0.3
@@ -266,95 +270,118 @@ color.bar3 <- function(x_pos, y_pos, lut, min, max=-min, nticks=11, ticks=seq(mi
 color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
 text(7275, 0.63, "Marker's level")
 text(1, 1, "(a)")
+####
+#fName <- paste0(jobName, "_metadata.tsv")
+#write.table(annotation.col, file = fName, sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 ```
 
-# PCA (AWST) | ADT
 
-```{r _pprcomp_study.pdf, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis'}
-x_legend <- -0.2; y_legend <- 2.63
+## [3D visualization of the principal components](https://projector.tensorflow.org/?config=https://gist.githubusercontent.com/stefanoMP/3091ef535531c3e76fedeeb685c4b5ce/raw/5aaec805631bee57c0194800490fd5a518c07e03/CBMC20200318.json)
+
+# PCA (AWST) | ...
+```{r PCA (AWST) | ..., eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis'}
+x_legend <- 0.08; y_legend <- -1.75
 x_text <- -2.3; y_text <- 2.
 load("expression_prcomp.RData")
 pprcomp$x <- scale(pprcomp$x)
+#
+fName <- paste0(jobName, "_expression_prcomp.tsv")
+write.table(pprcomp$x[, 1:3], file = fName, sep = "\t", row.names = FALSE, col.names = FALSE)
+#
 mmain = paste0("Principal components analysis (", nrow_exprData, " cells/", ncol_exprData, " features)")
-if(save_plots) png("prcomp_CITE6.png", width= png_width_small, height= png_height_small, res = png_res)
+cat(sprintf("\n\n### %s\n\n", mmain))
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CITE6.png"), width= png_width_small, height= png_height_small, res = png_res)
 plot(pprcomp$x, col = clustering.df$CBMC6.col, main = mmain, 
-     xlab = "first principal component", ylab = "secondo principal component", pch = 19)
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
 legend(x_legend, y_legend, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
 text(x_text, y_text, "(b)")
-###############################
-
-mmain <-  "principal component analysis - CD3"#  "prcomp (AWST)| flow cytometry/CD3"
+###
+mmain <- "Principal component analysis - CD3"#  "prcomp (AWST)| flow cytometry/CD3"
 cat(sprintf("\n\n### %s\n\n", mmain))
-if(save_plots) png(file = "prcomp_CD3.png", width = width_png, height = width_png)
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD3.png"), width = width_png, height = width_png)
 plot(pprcomp$x, col = as.character(annotation.df$CD3.col), main = mmain, 
-     xlab = "first principal component", ylab = "secondo principal component", pch = 19)
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
 ffill2 <- names(table(annotation.df$CD3.col))
-color.bar2(-2.3, -0.7, ffill2, -3, values = vvalues)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
 text(x_text, y_text, "(a)")
-
-mmain <-  "principal component analysis - CD19"#  "prcomp (AWST)| flow cytometry/CD19"
+#
+mmain <- "Principal component analysis - CD19"#  "prcomp (AWST)| flow cytometry/CD19"
 cat(sprintf("\n\n### %s\n\n", mmain))
-if(save_plots) png(file = "prcomp_CD19.png", width = width_png, height = width_png)
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD19.png"), width = width_png, height = width_png)
 plot(pprcomp$x, col = as.character(annotation.df$CD19.col), main = mmain, 
-     xlab = "first principal component", ylab = "secondo principal component", pch = 19)
-color.bar2(-2.3, -0.7, ffill2, -3, values = vvalues)
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
 text(x_text, y_text, "(b)")
-
-mmain <-  "principal component analysis - CD11c"#  "prcomp (AWST)| flow cytometry/CD11c"
+#
+mmain <-  "Principal component analysis - CD11c"#  "prcomp (AWST)| flow cytometry/CD11c"
 cat(sprintf("\n\n### %s\n\n", mmain))
-if(save_plots) png(file = "prcomp_CD11c.png", width = width_png, height = width_png)
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD11c.png"), width = width_png, height = width_png)
 plot(pprcomp$x, col = as.character(annotation.df$CD11c.col), main = mmain, 
-     xlab = "first principal component", ylab = "secondo principal component", pch = 19)
-color.bar2(-2.3, -0.7, ffill2, -3, values = vvalues)
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
 text(x_text, y_text, "(c)")
-
-
-mmain <-  "principal component analysis - CD14"#  "prcomp (AWST)| flow cytometry/CD14"
+#
+mmain <-  "Principal component analysis - CD14"#  "prcomp (AWST)| flow cytometry/CD14"
 cat(sprintf("\n\n### %s\n\n", mmain))
-if(save_plots) png(file = "prcomp_CD14.png", width = width_png, height = width_png)
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD14.png"), width = width_png, height = width_png)
 plot(pprcomp$x, col = as.character(annotation.df$CD14.col), main = mmain, 
-     xlab = "first principal component", ylab = "secondo principal component", pch = 19)
-color.bar2(-2.3, -0.7, ffill2, -3, values = vvalues)
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
 text(x_text, y_text, "(d)")
-
-mmain <-  "principal component analysis - CD4"#  "prcomp (AWST)| flow cytometry/CD4"
+######### CD4
+mmain <- "Principal component analysis - CD4"#  "prcomp (AWST)| flow cytometry/CD4"
 cat(sprintf("\n\n### %s\n\n", mmain))
-if(save_plots) png(file = "prcomp_CD4.png", width = width_png, height = width_png)
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD4.png"), width = width_png, height = width_png)
 plot(pprcomp$x, col = as.character(annotation.df$CD4.col), main = mmain, 
-     xlab = "first principal component", ylab = "secondo principal component", pch = 19)
-color.bar2(-2.3, -0.7, ffill2, -3, values = vvalues)
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
 text(x_text, y_text, "(e)")
-
-mmain <-  "principal component analysis - CD8"#  "prcomp (AWST)| flow cytometry/CD8"
+######### CD8
+mmain <- "Principal component analysis - CD8"#  "prcomp (AWST)| flow cytometry/CD8"
 cat(sprintf("\n\n### %s\n\n", mmain))
-if(save_plots) png(file = "prcomp_CD8.png", width = width_png, height = width_png)
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD8.png"), width = width_png, height = width_png)
 plot(pprcomp$x, col = as.character(annotation.df$CD8.col), main = mmain, 
-     xlab = "first principal component", ylab = "secondo principal component", pch = 19)
-color.bar2(-2.3, -0.7, ffill2, -3, values = vvalues)
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
 text(x_text, y_text, "(f)")
+######### CD2
+mmain <- "Principal component analysis - CD2"#  "prcomp (AWST)| flow cytometry/CD8"
+cat(sprintf("\n\n### %s\n\n", mmain))
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD2.png"), width = width_png, height = width_png)
+plot(pprcomp$x, col = as.character(annotation.df$CD2.col), main = mmain, 
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
+text(x_text, y_text, "(g)")
+######### CD57
+mmain <- "Principal component analysis - CD57"#  "prcomp (AWST)| flow cytometry/CD8"
+cat(sprintf("\n\n### %s\n\n", mmain))
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CD57.png"), width = width_png, height = width_png)
+plot(pprcomp$x, col = as.character(annotation.df$CD57.col), main = mmain, 
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+color.bar2(-2.3, 0.3, ffill2, -3, values = vvalues)
+text(x_text, y_text, "(h)")
 ```
 
-# Rtsne p100 (AWST) | ADT
-
-```{r Rtsne p100 (AWST)| cibersort, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center"}
+# Rtsne (AWST) | clustering
+```{r Rtsne (AWST) | clustering, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center"}
 load("expression_Rtsne_2d.RData")
 ans_Rtsne$Y <- scale(ans_Rtsne$Y)
-if(save_plots) png("Rtsne.png", width= png_width_small, height= png_height_small, res = png_res)
+if(save_plots) png(paste0(jobName, "_expression_Rtsne.png"), width= png_width_small, height= png_height_small, res = png_res)
 mmain = "T-distributed Stochastic Neighbor Embedding (tsne)"
 plot(-ans_Rtsne$Y[, 1], ans_Rtsne$Y[, 2], col = clustering.df$CBMC6.col, main = mmain, xlab = "", ylab = "")
-legend(-1.65, -1.5, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
-text(-1.65, 2, "(c)")
+legend(-2.5, -1.1, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+text(-2.5, 1.8, "(c)")
 ```
 
-# umap (AWST) | ADT
-```{r umap 2d (AWST)| cibersort, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center"}
+# umap (AWST) | clustering
+```{r umap 2d (AWST) | clustering, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center"}
 load("expression_umap_2d.RData")
 ans_umap$layout <- scale(ans_umap$layout)
-if(save_plots) png("umap.png", width= png_width_small, height= png_height_small, res = png_res)
+if(save_plots) png(paste0(jobName, "_expression_umap.png"), width= png_width_small, height= png_height_small, res = png_res)
 mmain = "Uniform Manifold Approximation and Projection (umap)"
-plot(-ans_umap$layout[, 2], -ans_umap$layout[, 1], col = clustering.df$CBMC6.col, main = mmain, xlab = "", ylab = "")
-legend(-1.65, -1.5, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
-text(-1.65, 1.5, "(d)")
+plot(-ans_umap$layout[, 1], -ans_umap$layout[, 2], col = clustering.df$CBMC6.col, main = mmain, xlab = "", ylab = "")
+legend(1, -1.5, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+text(-1.5, 1, "(d)")
 ```
 
 # Session info
