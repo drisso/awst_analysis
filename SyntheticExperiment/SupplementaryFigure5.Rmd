@@ -1,0 +1,165 @@
+---
+title: "Code to reproduce the analyses of the AWST paper: Supplemetary figure 5"
+author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
+date:  '`r format(Sys.time(), "%d %B, %Y")`'
+output: 
+  html_document: 
+    toc: no
+    toc_float: yes
+    df_print: paged
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: console
+---
+
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2020). Per-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+
+This file belongs to the repository: https://github.com/drisso/awst_analysis.
+
+The code is released with license GPL v3.0.
+
+```{r setup, echo=FALSE, message=FALSE}
+rm(list = ls())
+setwd("~/Dropbox/AWST/gitHub/SD20200413/")
+library(knitr)
+opts_chunk$set(echo = FALSE, fig.height = 4.5, fig.width = 11, fig.align = "center")
+library(cluster)
+library(dendextend)
+library(clues)
+library(awst)
+require(ConsensusClusterPlus)
+jobName <- "ARIcurves202000511"
+###
+# get data from gitHub
+base_path <- "https://raw.githubusercontent.com/drisso/awst_analysis/master/"
+ttable <- read.csv(url(paste0(base_path, "SyntheticExperiment/synthetic20200413.tsv")), sep = "\t",
+                   stringsAsFactors = TRUE)
+annotation.df <- ttable[, 1:3]; rownames(annotation.df) <- annotation.df$samples
+ddata <- ttable[, -(1:3)]
+rownames(ddata) <- annotation.df$samples
+colnames(ddata) <- gsub("X", "", colnames(ddata))
+ddata <- t(ddata)
+feature_annotation <- read.csv(url(paste0(base_path, "SyntheticExperiment/synthetic20200413_features_annotation.tsv")), sep = "\t")
+ddata <- ddata[paste(feature_annotation$EntrezID), ]
+rm(ttable)
+tt <- table(annotation.df$sample, annotation.df$sample.col)
+clust.col <- colnames(tt)[apply(tt, 1, which.max)]
+names(clust.col) <- rownames(tt)
+#load("synthetic20200413.RData")
+###
+thisPalette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99") # from ConsensusClusterPlus
+png_width <- 640
+png_height <- 480
+png_res <- 1/300
+save_png <- FALSE
+x_legend <- 81
+y_scale_ <- -0.1
+y_shift_ <- -0.13
+source(url(paste0(base_path, "functions.R")))
+source("~/Dropbox/consensus/pkg/consensusFun20200415.R")
+##########
+amount_of_features <- 1:10
+results <- data.frame(row.names = paste0(amount_of_features, "K"), 
+                      amount_of_features = 1000 * amount_of_features, 
+                      FPKM = NA, FPKMccp = NA, FPKMccpPAM = NA)
+```
+
+```{r FPKM, eval=FALSE}
+eData <- get_FPKM(ddata, feature_annotation$GeneLength)
+eData <- log2(1 + eData)
+get_exprData <- function(eMatrix, K) {
+  tmp <- apply(eMatrix, 2, var)
+  tmp <- names(tail(sort(tmp), K))
+  eMatrix <-  scale(eMatrix[, tmp])
+  return(eMatrix)
+}
+get_hc <- function(eData) {
+  hhc <- hclust(dist(eData), method = "ward.D2")
+  hhc$height <- hhc$height/max(hhc$height)
+  hhc$main <- paste0(nrow(eData), " samples/", ncol(eData), " genes")
+  return(hhc)
+}
+get_ARI_and_plot <- function(hhc, png_filename = NULL) {
+  if(!is.null(png_filename)) png(file = png_filename, width = png_width, height = png_height, res = png_res)
+  plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = hhc$main)
+  wwhere <- 5
+  hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+  abline(h = hh, col = "red")
+  clustering <- as.factor(cutree(hhc, k = wwhere))
+  names(clustering) <- hhc$labels
+  levels(clustering) <- thisPalette
+  tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+  colnames(tmp.col) <- c("clust", "sample")
+  colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+  tmp.col <- as.data.frame(tmp.col)
+  message("adjusted-Rand index (clues): ", ans <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
+  if(!is.null(png_filename)) dev.off()
+#  return(ifelse(ans < 0, 0, ans))
+  return(ans)
+}
+
+for(k in results$amount_of_features) {
+  exprData <- get_exprData(eData, k)
+  hhc <- get_hc(exprData)
+  results$FPKM[floor(k/1000)] <- get_ARI_and_plot(hhc)
+}
+```
+```{r FPKMccp, eval=FALSE}
+set.seed(20200509)
+get_hc <- function(eData) {
+  ans <- ConsensusClusterPlus(t(eData), maxK = 5, reps = 1000)
+  hhc <- ans[[5]]$consensusTree
+  hhc$height <- hhc$height/max(hhc$height)
+  hhc$main <- paste0(nrow(eData), " samples/", ncol(eData), " genes")
+  return(hhc)
+}
+for(k in results$amount_of_features) {
+  exprData <- get_exprData(eData, k)
+  hhc <- get_hc(exprData)
+  results$FPKMccp[floor(k/1000)] <- get_ARI_and_plot(hhc)
+}
+```
+```{r FPKMccp_PAM, eval = FALSE}
+set.seed(20200509)
+get_hc <- function(eData) {
+  ans <- ConsensusClusterPlus(t(eData), maxK = 5, reps = 1000, clusterAlg = "pam", distance = "euclidean")
+  hhc <- ans[[5]]$consensusTree
+  hhc$height <- hhc$height/max(hhc$height)
+  hhc$main <- paste0(nrow(eData), " samples/", ncol(eData), " genes")
+  return(hhc)
+}
+
+for(k in results$amount_of_features) {
+  exprData <- get_exprData(eData, k)
+  hhc <- get_hc(exprData)
+  results$FPKMccpPAM[floor(k/1000)]  <- get_ARI_and_plot(hhc)
+}
+save(results, file = paste0(jobName, "_results.RData"))
+```
+
+# Supplementary figure 5
+Study of FPKM pre-processing on synthetic data. For each amount of features, 1) a clustering procedure has been applied, then 2) we got the adjusted Rand index. Three clustering procedures are shown: black) hierarchical clustering with Ward's linkage and Euclidean distance, red) ConsensusClusterPlus with average linkage (inner and outer) and Pearson's correlation as distance, and blue) ConsensusClusterPlus with PAM and Euclidean distance.
+```{r ARIcurves202000511_FPKM.png}
+load("ARIcurves202000511_results.RData")
+if(save_png) png(file = paste0(jobName, "_FPKM.png"), width = png_width, height = png_height, res = png_res)
+plot(results$FPKM, type = "l", main = "adjusted Rand index curves", xaxt = "n", bty = "n",
+     xlab = "amount of features (in thousands)", 
+     ylab = "adjusted Rand index")
+text(1:length(results$FPKM), -0.025, rownames(results))
+points(results$FPKM, pch = 20)
+lines(results$FPKMccp, col = "red")
+points(results$FPKMccp, pch = 20, col = "red")
+lines(results$FPKMccpPAM, col = "blue")
+points(results$FPKMccpPAM, pch = 20, col = "blue")
+legend(5, 1, legend=c("HC with Ward's linkage and Euclidean distance", 
+                      "CCP with average linkage and Pearson's correlation", 
+                      "CCP with PAM and Euclidean distance"),
+       col=c("black", "red", "blue"), lty=1, cex=0.8,  box.col = "white")
+if(save_png) dev.off()
+kable(results)
+```
+
+```{r}
+sessionInfo()
+knit_exit()
+```
