@@ -1,0 +1,157 @@
+---
+title: "Code to reproduce the normalization of HART2013: Analysis of the LGG data<br/>Supplementary Figure 12"
+author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
+date:  'compiled on `r format(Sys.time(), "%B %d, %Y")`'
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 7
+    toc: yes
+    toc_float: yes
+    df_print: paged
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: console
+---
+
+# [Finding the active genes in deep RNA-seq gene expression studies](https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-14-778)
+
+## Gaussian fit and zFPKM normalization
+For protein-coding gene expression values for each cell line, log2(FPKM) values less than −15 were set to not-detected. An empirical distribution of log2(FPKM) values was calculated by kernel density estimate in Python using scipy.stats.gaussian_kde with default parameters. A half-Gaussian curve was fitted to the right half of the main peak by setting $\mu$ at the kde maximum. The standard deviation is then determined by:
+
+\[\sigma = \big(U - \mu\big)\cdot \sqrt{\frac{\pi}{2}}\]
+
+where $U$ is the mean of all log2(FPKM) values $>\mu$. The half-Gaussian was then mirrored to a full Gaussian distribution with parameters $\big(\mu, \sigma\big)$. Log2(FPKM) is then transformed to zFPKM:
+
+\[zFPKM = \frac{\log_2(FPKM) - \mu}{\sigma}\]
+
+## Expression state from chromatin state
+...
+Thus the zFPKM transform can be used with gene expression data alone to determine with high consistency the range of gene expression defined by active chromatin. Hereafter, we define this threshold as zFPKM $>= −3$, preferring to err on the side of capturing too many noisy genes rather than too few active ones.
+
+# Our interpretation
+From the prescription of Hart, we selected those features having zFPKM $>= −3$ on average. 
+
+```{r knitr setup, echo=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.align = "center") 
+#knit_exit()
+```
+
+
+```{r setup, message=FALSE}
+rm(list = ls()) # 20200320
+setwd("~/Dropbox/AWST/gitHub/lgg20200320_Hart/") # 20200318
+jobName <- "LGG20200320"
+library(awst)
+library(EDASeq)
+library(scales)
+library(survival)
+library(survminer)
+library(GGally)
+library(heatmap3)
+library(dendextend)
+###
+annotation.df <- read.table("https://raw.githubusercontent.com/drisso/awst_analysis/master/LowerGradeGliomaExperiment/LGG_annotation.tsv", sep = "\t", row.names = 1)
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col) )
+###
+save_plots <- FALSE
+png_width_large <- 1500
+png_height_large <- 750
+png_width_small <- 700
+png_height_small <- 400
+png_res <- 1/300
+
+source("https://raw.githubusercontent.com/drisso/awst_analysis/master/functions.R") #20200316
+```
+
+```{r working_HART.RData, echo=FALSE, include=FALSE, eval=TRUE}
+if(!file.exists(paste0(jobName, "_dist_hclust_HART.RData"))) {
+load("Legacy_TCGA_LGG_Level3.RData")
+tmp <- strsplit(rownames(ddata), "\\|")
+geneNames <- matrix("", ncol = 2, nrow = length(tmp))
+rownames(geneNames) <- rownames(ddata)
+j <- 1 
+while(j <= length(tmp)) {
+  geneNames[j, 1] <- tmp[[j]][1]
+  geneNames[j, 2] <- tmp[[j]][2]
+  j <- j + 1
+}
+rownames(ddata) <- geneNames[, 2]
+###
+geneInfo <- read.csv("https://raw.githubusercontent.com/drisso/awst_analysis/master/geneInfoHG19_20180124.tsv", sep = "\t", row.names = 1) # 20200316
+sum(is.na(geneInfo$geneLength))
+wwhich <- which(rownames(ddata) %in% rownames(geneInfo))
+ddata <- ddata[wwhich,]
+geneInfo <- geneInfo[rownames(ddata),]
+exprData <- get_FPKM(ddata, geneInfo$geneLength)
+exprData <- get_Hart2013(exprData)
+
+tmp <- colMeans(exprData)
+fivenum(tmp)
+sum(tmp > -3)
+
+nrow_exprData <- nrow(exprData)
+ncol_exprData <- ncol(exprData)
+ddist <- dist(exprData)
+hhc <- hclust(ddist, method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 20)
+save(hhc, aCalinski, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_dist_hclust_HART.RData"))
+}
+```
+
+# Supplementary figure 12: data transformed according to the prescription of Hart (2013)
+
+```{r _plot_hclust_main.png, fig.width=30, fig.height=15, echo=FALSE}
+load(paste0(jobName, "_dist_hclust_HART.RData"))
+annotation.col <- annotation.col[hhc$labels,]
+hhc$height <- hhc$height/max(hhc$height)
+
+mmain  <-  paste0(jobName, " (", nrow_exprData, " samples/", ncol_exprData, " genes)")
+if(save_plots) {
+  mmain <- ""
+  png(paste0(jobName, "_plot_hclust_HART.png"), width= png_width_large, height= png_height_large, res = png_res)
+  }
+plot(hhc, hang = -1, labels = FALSE, xlab = "euclidean/ward", sub = "", main = mmain)
+add_Calinski_curve(height = 0.5, from = 1, to = 400)
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.1, y_shift = -0.115)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.NEJM, annotation.df$exprClust.NEJM.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(1, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/NEJM", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.CELL, annotation.df$exprClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(60, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$methClust.CELL, annotation.df$methClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(110, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "methClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$CODEL.subtype, annotation.df$CODEL.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(160, 0.95, legend = gsub("kamoun_", "", rownames(tt)), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "CODEL subtype", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$original.subtype, annotation.df$original.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(210, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+```
+
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
+
+```{r}
+knit_exit()
+```
