@@ -1,0 +1,199 @@
+---
+title: "Code to reproduce the clustering of TCGA 2015: Analysis of the LGG data<br/>Supplementary figures 15 and 16"
+author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
+date:  'compiled on `r format(Sys.time(), "%B %d, %Y")`'
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 7
+    toc: yes
+    toc_float: yes
+    df_print: paged
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: console
+---
+
+# [Comprehensive, Integrative Genomic Analysis of Diffuse Lower-Grade Gliomas](https://www.nejm.org/doi/full/10.1056/NEJMoa1402121)
+#### Warning: at the time of the paper, the samples were 266; this analysis considers the actual number of 516 samples. 
+
+#### from [Supplementary Appendix (p.24)](https://www.nejm.org/doi/suppl/10.1056/NEJMoa1402121/suppl_file/nejmoa1402121_appendix_1.pdf):
+
+...  and normalized within-sample to a fixed upper quartile. ... Gene-level data was restricted to genes expressed in at least 70% of samples. Data were Log2 transformed and median centered across samples prior to further analysis. 
+
+The most variable genes were selected as the 1500 genes with the highest median absolute deviation. Consensus clustering was performed using ConsensusClusterPlus (Wilkerson and Hayes, 2010) (1000 iterations, resample rate of 80%, and Pearson correlation) and at k=6 a local maxima is reached. 
+
+
+```{r knitr setup, echo=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.align = "center") 
+```
+
+
+```{r setup, message=FALSE}
+rm(list = ls()) 
+setwd("~/Dropbox/AWST/gitHub/lgg20200326_TCGA/")
+jobName <- "LGG20200522"
+library(awst)
+library(EDASeq)
+library(scales)
+library(survival)
+library(survminer)
+library(GGally)
+library(heatmap3)
+library(dendextend)
+library(clues)
+###
+annotation.df <- read.table("https://raw.githubusercontent.com/drisso/awst_analysis/master/LowerGradeGliomaExperiment/LGG_annotation.tsv", sep = "\t", row.names = 1) #20200316
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col) )
+###
+save_png <- FALSE
+png_width_large <- 1500
+png_height_large <- 750
+png_width_small <- 700
+png_height_small <- 400
+png_res <- 1/300
+thisPalette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99") # from ConsensusClusterPlus
+source("https://raw.githubusercontent.com/drisso/awst_analysis/master/functions.R") #20200316
+```
+
+
+```{r, echo=TRUE}
+if(!file.exists(paste0(jobName, "_ConsensusClusterPlus.RData"))) {
+  load("Legacy_TCGA_LGG_Level3.RData") # to download from https://github.com/drisso/awst_analysis
+  require(EDASeq)
+  ans <- newSeqExpressionSet(ddata)
+  ans <- betweenLaneNormalization(ans, which = "upper", round = FALSE) #Davide
+  dim(normCounts <- normCounts(ans)) #[1] 20531   516
+#Gene-level data was restricted to genes expressed in at least 70% of samples. 
+  sum((tmp <- rowMeans(normCounts > 0)) > 0.7) #[1] 17232
+  dim(normCounts <- normCounts[tmp > 0.7,]) #[1] 17232   516
+#Data were Log2 transformed and 
+  exprData <- log2(1 + t(normCounts))
+#median centered across samples prior to further analysis. 
+  mmedian <- colMedians(exprData)
+  exprData <- scale(exprData, center = mmedian, scale = FALSE)
+  
+#The most variable genes were selected as the 1500 genes with the highest median absolute deviation. 
+  MADs <- colMads(exprData)
+  names(MADs) <- colnames(exprData)
+  fivenum(MADs) 
+#  VPS39|23339    SNTB2|6645 AMOTL1|154810  RNF150|57484     XIST|7503 
+#    0.1602288     0.4145174     0.6597492     1.1164464     6.6795257 
+     
+  selected_features <- names(tail(sort(MADs), 1500))
+  dim(exprData <- exprData[, selected_features])#[1]  516 1500
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+###############
+#Consensus clustering was performed using ConsensusClusterPlus (Wilkerson and Hayes, 2010) 
+#(1000 iterations, resample rate of 80%, and Pearson correlation)
+  set.seed(20200409)
+  require(ConsensusClusterPlus)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 10, reps = 1000, distance = "pearson", pItem = 0.80,
+                              title = paste0(jobName, "_TCGA2015"), plot = "png")
+  save(ans, file = paste0(jobName, "_ConsensusClusterPlus.RData"))
+  ###
+  ccp <- ans[[3]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp3_hclust_TCGA.RData"))
+  
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp5_hclust_TCGA.RData"))
+}
+```
+
+
+# Supplementary figure 15
+<table>
+<tbody>
+<tr>
+<td><img src="./LGG20200522_TCGA2015/consensus011.png"></td>
+<td><img src="./LGG20200522_TCGA2015/consensus012.png"></td>
+</tr>
+<tr>
+<td><img src="./LGG20200522_TCGA2015/consensus003.png"></td>
+<td><img src="./LGG20200522_TCGA2015/consensus005.png"></td>
+</tr>
+</tbody>
+</table>
+
+
+# Consensus Cluster Plot (k = 3)
+
+```{r ccp3_plot_hclust_main.png, fig.width=30, fig.height=15, echo=FALSE}
+load(paste0(jobName, "_ccp3_hclust_TCGA.RData"))
+#if(save_plots) {
+#  mmain <- ""
+#  png(paste0(jobName, "_plot_hclust_TCGA_ccp3.png"), width= png_width_large, height= png_height_large, res = png_res)
+#}
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+hhc$height <- hhc$height/max(hhc$height)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.1, y_shift = -0.115)
+###############
+no_of_clusters <- 3
+hh <- mean(c(hhc$height[length(hhc$height)-no_of_clusters+2], hhc$height[length(hhc$height)-no_of_clusters+1]))
+abline(h = hh, col = "red")
+```
+
+ 
+# Supplementary figure 16: <br/>Consensus Cluster Plot (k = 5)
+```{r ccp5_plot_hclust_main.png, fig.width=30, fig.height=15, echo=FALSE}
+load(paste0(jobName, "_ccp5_hclust_TCGA.RData"))
+if(save_png) {
+  mmain <- ""
+  png(paste0(jobName, "_plot_hclust_TCGA_ccp5.png"), width= png_width_large, height= png_height_large, res = png_res)
+}
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+hhc$height <- hhc$height/max(hhc$height)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+#colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.1, y_shift = -0.115)
+###############
+no_of_clusters <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-no_of_clusters+2], hhc$height[length(hhc$height)-no_of_clusters+1]))
+abline(h = hh, col = "red")
+clust5 <- as.factor(cutree(hhc, k = no_of_clusters))
+
+thisPalette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#FB9A99", "#33A02C") # from ConsensusClusterPlus
+levels(clust5) <- thisPalette
+tmp.col <- cbind(clust5, annotation.col)
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = -0.1, y_shift = -0.11)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.NEJM, annotation.df$exprClust.NEJM.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(200, 0.96, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/NEJM", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.CELL, annotation.df$exprClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(1, 0.96, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$methClust.CELL, annotation.df$methClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(420, 0.96, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "methClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$CODEL.subtype, annotation.df$CODEL.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(80, 0.96, legend = gsub("kamoun_", "", rownames(tt)), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "CODEL subtype", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$original.subtype, annotation.df$original.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(140, 0.96, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+```
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
