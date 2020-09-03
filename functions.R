@@ -96,3 +96,49 @@ print.vCramer <- function(obj) {
   cat(str)
 }
 
+# These functions are a reshaped version of those in
+# https://github.com/LuyiTian/sc_mixology/blob/master/script/clustering/cluster_eval.R
+
+cal_entropy=function(x){
+  freqs <- table(x)/length(x)
+  freqs = freqs[freqs>0]
+  return(-sum(freqs * log(freqs))/log(length(x)))
+}
+
+get_cluster_purity=function(theoretical, estimated){
+  return(1-mean(unlist(lapply(unique(theoretical), function(x){cal_entropy(estimated[theoretical == x])}))))
+}
+
+get_cluster_accuracy=function(theoretical, estimated){
+  return(1-mean(unlist(lapply(unique(estimated), function(x){cal_entropy(theoretical[estimated == x])})), na.rm = TRUE))
+}
+###########################################################
+get_ARI <- function(theoretical, estimated) {
+  suppressPackageStartupMessages(require(clues))
+  ans <- adjustedRand(as.numeric(factor(theoretical)), as.numeric(factor(estimated)))[2]
+  return(ans)
+}
+
+get_metrics <- function(theoretical, estimated, verbose = TRUE) {
+  
+  eca <- get_cluster_accuracy(theoretical, estimated)
+  ecp <- get_cluster_purity(theoretical, estimated)
+  ari <- get_ARI(theoretical, estimated)
+  avg <- sign(ari) * exp(log(abs(eca * ecp * ari))/3)
+  thNofC <- length(unique(theoretical))
+  estNofC <- length(unique(estimated))
+  
+  ans <- c(round(c(eca, ecp, ari, avg), 4), thNofC, estNofC)
+  names(ans) <- c("eca", "ecp", "ari", "G", "thNofC", "estNofC")
+  
+  if(verbose) {
+    message("cluster accuracy (eca): ", ans[1])
+    message("cluster purity (ecp): ", ans[2])
+    message("adjusted Rand's index (ari): ", ans[3])
+    message("G index (geometric average of eca, ecp, and ari): ", ans[4])
+    message("no. of clusters in theoretical partition: ", ans[5])
+    message("no. of clusters in estimated partition: ", ans[6])
+  }
+  
+  return(ans)
+}
