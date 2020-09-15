@@ -1,0 +1,620 @@
+---
+title: "Code to reproduce the analyses of the AWST paper: MIXOLOGY"
+author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
+date:  '`r format(Sys.time(), "%d %B, %Y")`'
+output: 
+  html_document: 
+    toc: yes
+    toc_float: yes
+    df_print: paged
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r knitr, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, fig.height = 4.5, fig.width =  11, fig.align = "center")
+```
+
+blah blah 
+
+This file belongs to the repository: https://github.com/drisso/awst_analysis.
+
+The code is released with license GPL v3.0.
+
+(Note: I don't think we can release these images with GPL license, to be removed from final file)
+# Benchmarking single cell RNA-sequencing analysis pipelines using mixture control experiments [(Nature)](https://www.nature.com/articles/s41592-019-0425-8)
+### Supplementary Figure 3 Visualization of representative benchmarking datasets using t-SNE and UMAP and violin plot of the number of doublets.
+ (a) t-SNE and UMAP visualizations of 4 datasets. From left to right: 10X single cell using 3 cell lines; 10X single cell using 5 cell lines; a CEL-seq2 cell mixture and a CEL-seq2 RNA mixture. Each point represents a cell or ‘pseudo cell’ and the number of cells in each plot is indicated in the title. (b) Violin plot of doublets in each dataset, identified using Demuxlet (DBL: doublet, SNG: single cell). The number of single cells and doublets are shown on top of each violin. Doublets were excluded when calculating the performance metrics.
+![](https://media.springernature.com/full/springer-static/esm/art%3A10.1038%2Fs41592-019-0425-8/MediaObjects/41592_2019_425_Fig9_ESM.jpg?as=webp)
+
+
+### Supplementary Figure 5: Example clustering results and summary of clustering performance using ARI and the number of clusters.
+ (a) Examples of clustering results visualized by PCA (top) and t-SNE (bottom), with different colours representing the cluster assignments made by the selected method. The sample sizes are 340 for RNAmix_CEL-seq2, 285 for cellmix3 and 274 for sc_CEL-seq2. Coefficients obtained from linear models fitted using the ARI (b) or the number of clusters (c) as dependent variables, and experimental design, normalization methods, imputation methods and clustering methods as covariates. The coefficients measure whether particular features have positive or negative associations with the dependent variables.
+![](https://media.springernature.com/full/springer-static/esm/art%3A10.1038%2Fs41592-019-0425-8/MediaObjects/41592_2019_425_Fig11_ESM.jpg?as=webp)
+
+## The data are from [(github) single cell mixology: single cell RNA-seq benchmarking](https://github.com/LuyiTian/sc_mixology)
+- [scRNA-seq mixology: towards better benchmarking of single cell RNA-seq analysis methods](https://www.biorxiv.org/content/10.1101/433102v3)
+
+# Install and load `awst`
+
+```{r install_awst, eval=FALSE, echo=TRUE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("drisso/awst")
+#BiocManager::install("GIS-SP-Group/RCA")
+#BiocManager::install("hgu133plus2.db")
+```
+
+# Setup
+```{r setup, message=FALSE}
+jobName <- "mixoloy20200904"
+source(url("https://raw.githubusercontent.com/drisso/awst_analysis/master/functions.R"))
+
+true_number_of_clusters <- c(3, 5, 7, 10, 10)
+names(true_number_of_clusters) <- c("sc_10x", "sc_10x_5cl", "RNAmix_celseq2", "cellmix4", "cellmix3")
+####
+results <- matrix(NA, ncol = 4, nrow = 40)
+colnames(results) <- c("where", "what", "silhouette", "R2")
+k <- 1
+save_plots <- FALSE
+
+compute_r2 <- function(y, labs) {
+  fit <- lm(y ~ labs)
+  res <- summary(fit)
+  return(res$r.squared)
+}
+
+get_r2 <- function(datamat, labs) {
+  r2 <- apply(datamat, 2, compute_r2, labs)
+  return(r2)
+}
+```
+
+# sc_10x_5cl
+
+```{r}
+prefix <- "sc_10x_5cl"
+```
+
+```{r, eval = file.exists("sc_10x_expression_working.RData"), echo=FALSE}
+load("sc_10x_5cl_expression_working.RData")
+```
+
+```{r sc_10x_5cl, eval = !file.exists("sc_10x_expression_working.RData"), echo=TRUE}
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x_5cl.metadata.csv.gz?raw=true"))
+annotation.df <- read.csv(textConnection(readLines(con)))
+annotation.df$cell.col <- factor(annotation.df$cell_line)
+levels(annotation.df$cell.col) <- c("gold", "red", "blue", "magenta", "green3")
+annotation.df$cell.col <- as.character(annotation.df$cell.col)
+annotation.df$cell_line <- paste0("mix", annotation.df$mix)
+
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x_5cl.count.csv.gz?raw=true"))
+ddata <- read.csv(textConnection(readLines(con)))
+
+both <- intersect(colnames(ddata), rownames(annotation.df))
+ddata <- ddata[, both]
+annotation.df <- annotation.df[both,]
+prefix <- "sc_10x_5cl"
+save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
+```
+
+```{r _working.RData, eval= !file.exists("sc_10x_expression_working.RData"), echo=TRUE}
+library(awst)
+library(EDASeq)
+library(SingleCellExperiment)
+load(paste0(prefix, "_counts.RData"))
+
+no_of_detected_gene_per_sample <- colSums(ddata > 0) 
+fivenum(no_of_detected_gene_per_sample)
+ddata <- EDASeq::betweenLaneNormalization(as.matrix(ddata), which = "full", round = FALSE)
+# apply the AWS-transformation 
+tmp <- rowSums(ddata)
+sum(tmp > 0)
+tmp <- colSums(ddata)
+sum(tmp > 0)
+
+exprData <- awst(ddata, poscount = TRUE, full_quantile = TRUE)
+sum(is.na(rowSums(exprData)))
+sum(is.na(colSums(exprData)))
+
+save(exprData, prefix, file = paste0(prefix, "_expression.RData"))
+
+nrow_exprData <- nrow(exprData)
+ncol_exprData <- ncol(exprData)
+ddist <- dist(exprData)
+save(ddist, nrow_exprData, ncol_exprData, prefix, file = paste0(prefix, "_expression_dist.RData"))
+
+hhc <- hclust(ddist, method = "ward.D2")
+
+aCalinski <- calinski(hhc)
+
+pprcomp <- prcomp(exprData) # Run PC analysis
+pprcomp$x <- pprcomp$x[, 1:5]
+pprcomp$rotation <- pprcomp$rotation[, 1:5]
+
+set.seed(2020) 
+ans_Rtsne <- Rtsne(exprData, pca = FALSE) # Run TSNE
+
+set.seed(2020) 
+ans_umap <- umap(exprData) # Run Umap
+
+save(nrow_exprData, ncol_exprData, annotation.df,
+     pprcomp, ans_Rtsne, ans_umap, prefix, 
+     file = paste0(prefix, "_expression_working.RData"))
+```
+
+```{r PCA, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+cat("\n\n### PCA of ", prefix, "\n")
+x_legend <- 0.08; y_legend <- -1.75
+x_text <- -2.3; y_text <- 2.
+pprcomp$x <- scale(pprcomp$x)
+#
+mmain = paste0("Principal components analysis (", prefix, "; ", nrow_exprData, " cells/", ncol_exprData, " features)")
+if(save_plots) png(paste0(jobName, "_expression_prcomp_CITE6.png"), width= png_width_small, height= png_height_small, res = png_res)
+plot(pprcomp$x, col = annotation.df$cell.col, main = mmain, 
+     xlab = "first principal component", ylab = "second principal component", pch = 19)
+#legend(x_legend, y_legend, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+#text(x_text, y_text, "(b)")
+```
+```{r Rtsne, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+cat("\n\n### t-SNE of ", prefix, "\n")
+ans_Rtsne$Y <- scale(ans_Rtsne$Y)
+if(save_plots) png(paste0(jobName, "_expression_Rtsne.png"), width= png_width_small, height= png_height_small, res = png_res)
+mmain = "T-distributed Stochastic Neighbor Embedding (tsne)"
+plot(ans_Rtsne$Y[, 1], ans_Rtsne$Y[, 2], col = annotation.df$cell.col, main = mmain, xlab = "", ylab = "", pch = 19)
+#legend(-2.5, -1.1, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+#text(-2.5, 1.8, "(c)")
+```
+
+```{r umap, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+cat("\n\n### umap of ", prefix, "\n")
+ans_umap$layout <- scale(ans_umap$layout)
+if(save_plots) png(paste0(jobName, "_expression_umap.png"), width= png_width_small, height= png_height_small, res = png_res)
+mmain = "Uniform Manifold Approximation and Projection (umap)"
+plot(ans_umap$layout[, 1], ans_umap$layout[, 2], col = annotation.df$cell.col, main = mmain, xlab = "", ylab = "", pch = 19)
+#legend(1, -1.5, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+#text(-1.5, 1, "(d)")
+```
+
+
+```{r prepare_methods, eval=TRUE, echo=TRUE, results="asis"}
+library(awst)
+
+# raw counts (ddata)
+load(paste0(prefix, "_counts.RData"))
+load(paste0(prefix, "_expression.RData"))
+
+# get random subset (to be removed)
+set.seed(135)
+cellidx <- sample(colnames(ddata), 100)
+ddata <- ddata[,cellidx]
+annotation.df <- annotation.df[cellidx,]
+
+# awst (exprData)
+system.time({
+  fq <- EDASeq::betweenLaneNormalization(as.matrix(ddata), which = "full", round = FALSE)
+  exprData <- awst(fq, poscount = TRUE, full_quantile = TRUE)
+})
+exprData_gf <- awst::gene_filter(exprData, heterogeneity_threshold = .1)
+dim(exprData_gf)
+
+# VST
+library(DESeq2)
+
+get_hvg <- function(mat, k=1000) {
+  vars <- matrixStats::rowVars(mat)
+  names(vars) <- rownames(mat)
+  vars <- sort(vars, decreasing = TRUE)
+  mat <- mat[names(vars)[k],]
+}
+
+dds <- DESeqDataSetFromMatrix(ddata, colData = annotation.df,
+                              design = ~1)
+# dds <- estimateSizeFactors(dds)
+# dds <- estimateDispersions(dds)
+
+system.time({
+  vst <- varianceStabilizingTransformation(dds, blind=FALSE)
+  vst <- assay(vst)
+  vst2500 <- get_hvg(vst, k=2500)
+})
+
+system.time({
+  # rlog
+  rld <- rlog(dds, blind=FALSE)
+  rld <- assay(rld)
+  rld2500 <- get_hvg(rld, k=2500)
+})
+
+# Townes
+library(scry)
+library(SingleCellExperiment)
+
+system.time({
+  sce <- SingleCellExperiment(assays = list(counts = ddata),
+                              colData = annotation.df)
+  sce <- nullResiduals(sce, assay="counts", type="deviance")
+  sce <- nullResiduals(sce, assay="counts", type="pearson")
+  
+  res_deviance <- assay(sce, "binomial_deviance_residuals")
+  # res_deviance <- get_hvg(res_deviance)
+  res_pearson <- assay(sce, "binomial_pearson_residuals")
+  # res_pearson <- get_hvg(res_deviance)
+})
+
+# CPM
+system.time({
+  cpm <- get_CPM(ddata)
+  cpm2500 <- get_hvg(cpm, k=2500)
+})
+
+# raw
+raw <- as.matrix(ddata)
+```
+
+```{r silhouette, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+library(cluster)
+
+plot_sil <- function(datamat, labs, title) {
+  dist_raw <- dist(datamat)
+  sil_raw <- silhouette(x=labs,
+                   dist=dist_raw)
+  plot(sil_raw, main = title, col = levels(as.factor(annotation.df$cell.col)))
+  return(mean(sil_raw[,3]))
+}
+
+methods <- list("raw"=t(log1p(as.matrix(raw))), "cpm"=t(log1p(cpm)),
+                "cpm2500"=t(log1p(cpm2500)), "fq"=t(log1p(fq)),
+                "awst"=exprData, "awst_gf"=exprData_gf, "vst"=t(vst),
+                "vst2500"=t(vst2500), "rlog"=t(rld), "rlog2500"=t(rld2500),
+                "deviance"=t(res_deviance), "pearson"=t(res_pearson))
+
+results[k:(k+7),1] <- names(methods)
+results[k:(k+7),2] <- rep(prefix, length(methods))
+results[k:(k+7),3] <- sapply(seq_along(methods), function(i) {
+  plot_sil(methods[[i]], as.numeric(as.factor(annotation.df$cell.col)),
+           names(methods[i]))
+})
+```
+
+```{r anova, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+r2s <- lapply(seq_along(methods), function(i) {
+  get_r2(methods[[i]], as.factor(annotation.df$cell.col))
+})
+names(r2s) <- names(methods)
+
+# prendere solo i geni DE
+
+results[k:(k+7), 4] <- sapply(r2s, mean, na.rm=TRUE)
+
+boxplot(r2s, outline=FALSE)
+k <- k+8
+```
+
+# sc_10x
+```{r, eval = file.exists("sc_10x_expression_working.RData"), echo=FALSE}
+load("sc_10x_expression_working.RData")
+annotation.df <- annotation.df[hhc$labels,]
+```
+```{r sc_10x, eval = !file.exists("sc_10x_expression_working.RData"), echo=FALSE}
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x.metadata.csv.gz?raw=true"))
+annotation.df <- read.csv(textConnection(readLines(con)))
+annotation.df$cell.col <- factor(annotation.df$cell_line)
+levels(annotation.df$cell.col) <- c("red", "blue", "green3")
+annotation.df$cell.col <- as.character(annotation.df$cell.col)
+
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x.count.csv.gz?raw=true"))
+ddata <- read.csv(textConnection(readLines(con)))
+
+both <- intersect(colnames(ddata), rownames(annotation.df))
+ddata <- ddata[, both]
+annotation.df <- annotation.df[both,]
+prefix <- "sc_10x"
+save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
+```
+```{r, ref.label= "_working.RData", eval= !file.exists("sc_10x_expression_working.RData"), echo=FALSE}
+```
+```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
+```
+```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="silhouette", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="anova", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+
+
+# RNAmix_celseq2
+```{r, eval = file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
+load("RNAmix_celseq2_expression_working.RData")
+annotation.df <- annotation.df[hhc$labels,]
+```
+```{r RNAmix_celseq2, eval = !file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/RNAmix_celseq2.metadata.csv.gz?raw=true"))
+annotation.df <- read.csv(textConnection(readLines(con)))
+annotation.df$cell_line <- factor(annotation.df$mix)
+levels(annotation.df$cell_line)[1:2] <- "1-2"
+levels(annotation.df$cell_line) <- paste("mix", levels(annotation.df$cell_line))
+
+annotation.df$cell.col <- annotation.df$cell_line
+table(annotation.df$cell.col)
+levels(annotation.df$cell.col) <- c("gray25", "green4", "cyan4", "red4", "green", "cyan", "red")
+annotation.df$cell.col <- as.character(annotation.df$cell.col)
+
+
+annotation.df$mRNA_amount.col <- factor(annotation.df$mRNA_amount)
+levels(annotation.df$mRNA_amount.col) <- c("green1", "green2", "green3", "green4")
+annotation.df$mRNA_amount.col <- as.character(annotation.df$mRNA_amount.col)
+
+
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/RNAmix_celseq2.count.csv.gz?raw=true"))
+ddata <- read.csv(textConnection(readLines(con)))
+
+both <- intersect(colnames(ddata), rownames(annotation.df))
+ddata <- ddata[, both]
+annotation.df <- annotation.df[both,]
+prefix <- "RNAmix_celseq2"
+save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
+```
+```{r, ref.label= "_working.RData", eval= !file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
+```
+```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
+```
+```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="silhouette", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="anova", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+
+# cellmix3
+```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
+load("cellmix3_expression_working.RData")
+annotation.df <- annotation.df[hhc$labels,]
+```
+```{r cellmix3, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix3.metadata.csv.gz?raw=true"))
+annotation.df <- read.csv(textConnection(readLines(con)))
+annotation.df$mix <- paste0(annotation.df$H1975, annotation.df$H2228, annotation.df$HCC827)
+
+table(annotation.df$mix)
+annotation.df$mix[which(annotation.df$mix == "900")] <- "H1975"
+annotation.df$mix[which(annotation.df$mix == "810")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "801")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "711")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "720")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "702")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "630")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "603")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "504")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "540")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "522")] <- "H1975High"
+
+
+annotation.df$mix[which(annotation.df$mix == "009")] <- "HCC827"
+annotation.df$mix[which(annotation.df$mix == "018")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "108")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "027")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "117")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "207")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "306")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "036")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "045")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "405")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "225")] <- "HCC827High"
+
+
+annotation.df$mix[which(annotation.df$mix == "090")] <- "H2228"
+annotation.df$mix[which(annotation.df$mix == "081")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "180")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "072")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "171")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "270")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "360")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "063")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "450")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "054")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "252")] <- "H2228High"
+
+annotation.df$mix[which(annotation.df$mix == "111")] <- "balanced"
+annotation.df$mix[which(annotation.df$mix == "333")] <- "balanced"
+table(annotation.df$mix)
+
+annotation.df$cell_line <- annotation.df$mix
+annotation.df$cell.col <- factor(annotation.df$cell_line)
+levels(annotation.df$cell.col) <- c("gray30", "red4", "red", "red2", "green4", "green",
+                                    "green2", "cyan4", "cyan", "cyan2")
+annotation.df$cell.col <- as.character(annotation.df$cell.col)
+
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix3.count.csv.gz?raw=true"))
+ddata <- read.csv(textConnection(readLines(con)))
+
+both <- intersect(colnames(ddata), rownames(annotation.df))
+ddata <- ddata[, both]
+annotation.df <- annotation.df[both,]
+prefix <- "cellmix3"
+save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
+```
+```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
+```
+```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
+```
+```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="silhouette", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="anova", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+
+# cellmix4
+```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
+load("cellmix4_expression_working.RData")
+annotation.df <- annotation.df[hhc$labels,]
+```
+```{r cellmix4, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix4.metadata.csv.gz?raw=true"))
+annotation.df <- read.csv(textConnection(readLines(con)))
+annotation.df$mix <- paste0(annotation.df$H1975, annotation.df$H2228, annotation.df$HCC827)
+annotation.df$mix[which(annotation.df$mix == "900")] <- "H1975"
+annotation.df$mix[which(annotation.df$mix == "810")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "801")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "711")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "720")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "702")] <- "H1975Low"
+annotation.df$mix[which(annotation.df$mix == "630")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "603")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "504")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "540")] <- "H1975High"
+annotation.df$mix[which(annotation.df$mix == "522")] <- "H1975High"
+
+
+annotation.df$mix[which(annotation.df$mix == "009")] <- "HCC827"
+annotation.df$mix[which(annotation.df$mix == "018")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "108")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "027")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "117")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "207")] <- "HCC827Low"
+annotation.df$mix[which(annotation.df$mix == "306")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "036")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "045")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "405")] <- "HCC827High"
+annotation.df$mix[which(annotation.df$mix == "225")] <- "HCC827High"
+
+
+annotation.df$mix[which(annotation.df$mix == "090")] <- "H2228"
+annotation.df$mix[which(annotation.df$mix == "081")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "180")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "072")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "171")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "270")] <- "H2228Low"
+annotation.df$mix[which(annotation.df$mix == "360")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "063")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "450")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "054")] <- "H2228High"
+annotation.df$mix[which(annotation.df$mix == "252")] <- "H2228High"
+
+annotation.df$mix[which(annotation.df$mix == "111")] <- "balanced"
+annotation.df$mix[which(annotation.df$mix == "333")] <- "balanced"
+table(annotation.df$mix)
+
+annotation.df$cell_line <- annotation.df$mix
+annotation.df$cell.col <- factor(annotation.df$cell_line)
+levels(annotation.df$cell.col) <- c("gray30", "red4", "red", "red2", "green4", "green",
+                                    "green2", "cyan4", "cyan", "cyan2")
+annotation.df$cell.col <- as.character(annotation.df$cell.col)
+
+con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix4.count.csv.gz?raw=true"))
+ddata <- read.csv(textConnection(readLines(con)))
+
+both <- intersect(colnames(ddata), rownames(annotation.df))
+ddata <- ddata[, both]
+annotation.df <- annotation.df[both,]
+prefix <- "cellmix4"
+save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
+```
+```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
+```
+```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
+```
+```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="silhouette", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+```{r, ref.label="anova", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```
+
+# Session info
+```{r}
+sessionInfo()
+```
+
+# Table
+```{r, echo=FALSE}
+results <- as.data.frame(results)
+results$silhouette <- round(as.numeric(as.character(results$silhouette)), 4)
+results$R2 <- round(as.numeric(as.character(results$R2)), 4)
+
+knitr::kable(results)
+
+write.table(results, file = paste0(jobName, "_results_nocluster.tsv"), sep = "\t")
+```
+
+```{r}
+knitr::knit_exit()
+```
+
+(*) with at least a cluster of size 1.
+
+```{r}
+rm(list = ls())
+setwd("~/Dropbox/AWST/mixology/")
+ttable <- read.csv("mixoloy20200818_results.tsv", sep = "\t")
+protocol <- ttable[grep("protocol", ttable$what),]
+ttable <- ttable[-grep("protocol", ttable$what),]
+awst <- ttable[grep("AWST", ttable$what),]
+raw <- ttable[grep("counts", ttable$what),]
+K <- nrow(raw)
+
+tmp <- c(raw$avg, awst$avg)
+names(tmp) <- c(rep("raw", K), rep("awst", K))
+boxplot(tmp ~ names(tmp))
+t.test(tmp ~ names(tmp))
+wilcox.test(tmp ~ names(tmp))
+
+RaceID <- grep("RaceID", raw$what)
+Seurat <- grep("Seurat", raw$what)
+SC3 <- grep("SC3", raw$what)
+RCA <- grep("RCA", raw$what)
+
+RNAmix_celseq2 <- grep("RNAmix_celseq2", raw$where)
+cellmix3 <- grep("cellmix3", raw$where)
+cellmix4 <- grep("cellmix4", raw$where)
+sc_10x_5cl <- grep("sc_10x_5cl", raw$where)
+sc_10x <- grep("sc_10x", raw$where)
+sc_10x <- setdiff(sc_10x, sc_10x_5cl)
+llty <- rep(1, K)
+llty[RNAmix_celseq2] <- 4
+llty[sc_10x_5cl] <- 3
+llty[cellmix3] <- 2
+llty[cellmix4] <- 5
+
+ccol <- rep("black", K)
+ccol[RaceID] <- "green2"
+ccol[RCA] <- "magenta"
+ccol[Seurat] <- "red"
+ccol[SC3] <- "blue"
+plot(c(-0.5, 1.5), c(1, 1), col = "white", ylim = c(.5, 1))
+segments(0, raw$avg, 1, awst$avg, col = ccol, lty = llty)
+points(rep(1, K), awst$avg, col = ccol, pch = 19)
+points(rep(0, K), raw$avg, col = ccol, pch = 19)
+points(rep(1.05, nrow(protocol)), protocol$avg)
+text(rep(1.05, nrow(protocol)), protocol$avg, protocol$where, pos = 4)
+```
+
