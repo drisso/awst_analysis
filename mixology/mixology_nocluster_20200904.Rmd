@@ -56,12 +56,15 @@ source(url("https://raw.githubusercontent.com/drisso/awst_analysis/master/functi
 true_number_of_clusters <- c(3, 5, 7, 10, 10)
 names(true_number_of_clusters) <- c("sc_10x", "sc_10x_5cl", "RNAmix_celseq2", "cellmix4", "cellmix3")
 ####
-results <- matrix(NA, ncol = 4, nrow = 40)
-colnames(results) <- c("where", "what", "silhouette", "R2")
+results <- matrix(NA, ncol = 5, nrow = 90)
+colnames(results) <- c("where", "what", "silhouette", "NDE", "R2")
 k <- 1
 save_plots <- FALSE
 
 compute_r2 <- function(y, labs) {
+  if(all(y==0)) {
+    return(NA)
+  }
   fit <- lm(y ~ labs)
   res <- summary(fit)
   return(res$r.squared)
@@ -70,6 +73,20 @@ compute_r2 <- function(y, labs) {
 get_r2 <- function(datamat, labs) {
   r2 <- apply(datamat, 2, compute_r2, labs)
   return(r2)
+}
+
+compute_de <- function(y, labs) {
+  if(all(y==0)) {
+    return(1)
+  }
+  fit <- lm(y ~ labs)
+  res <- anova(fit)
+  return(res[1,5])
+}
+
+get_de <- function(datamat, labs) {
+  pvals <- apply(datamat, 2, compute_de, labs)
+  return(datamat[,pvals <= 5e-5])
 }
 ```
 
@@ -124,29 +141,25 @@ save(exprData, prefix, file = paste0(prefix, "_expression.RData"))
 
 nrow_exprData <- nrow(exprData)
 ncol_exprData <- ncol(exprData)
-ddist <- dist(exprData)
-save(ddist, nrow_exprData, ncol_exprData, prefix, file = paste0(prefix, "_expression_dist.RData"))
 
-hhc <- hclust(ddist, method = "ward.D2")
+# library(irlba)
+# pprcomp <- prcomp_irlba(exprData, 5) # Run PC analysis
+# 
+# set.seed(2020) 
+# ans_Rtsne <- Rtsne(exprData, pca = FALSE) # Run TSNE
+# 
+# set.seed(2020) 
+# ans_umap <- umap(exprData) # Run Umap
+# 
+# save(nrow_exprData, ncol_exprData, annotation.df,
+#      pprcomp, ans_Rtsne, ans_umap, prefix, 
+#      file = paste0(prefix, "_expression_working.RData"))
 
-aCalinski <- calinski(hhc)
-
-pprcomp <- prcomp(exprData) # Run PC analysis
-pprcomp$x <- pprcomp$x[, 1:5]
-pprcomp$rotation <- pprcomp$rotation[, 1:5]
-
-set.seed(2020) 
-ans_Rtsne <- Rtsne(exprData, pca = FALSE) # Run TSNE
-
-set.seed(2020) 
-ans_umap <- umap(exprData) # Run Umap
-
-save(nrow_exprData, ncol_exprData, annotation.df,
-     pprcomp, ans_Rtsne, ans_umap, prefix, 
+save(nrow_exprData, ncol_exprData, annotation.df, prefix,
      file = paste0(prefix, "_expression_working.RData"))
 ```
 
-```{r PCA, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```{r PCA, eval=FALSE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### PCA of ", prefix, "\n")
 x_legend <- 0.08; y_legend <- -1.75
 x_text <- -2.3; y_text <- 2.
@@ -159,7 +172,8 @@ plot(pprcomp$x, col = annotation.df$cell.col, main = mmain,
 #legend(x_legend, y_legend, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
 #text(x_text, y_text, "(b)")
 ```
-```{r Rtsne, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+
+```{r Rtsne, eval=FALSE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### t-SNE of ", prefix, "\n")
 ans_Rtsne$Y <- scale(ans_Rtsne$Y)
 if(save_plots) png(paste0(jobName, "_expression_Rtsne.png"), width= png_width_small, height= png_height_small, res = png_res)
@@ -169,7 +183,7 @@ plot(ans_Rtsne$Y[, 1], ans_Rtsne$Y[, 2], col = annotation.df$cell.col, main = mm
 #text(-2.5, 1.8, "(c)")
 ```
 
-```{r umap, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```{r umap, eval=FALSE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### umap of ", prefix, "\n")
 ans_umap$layout <- scale(ans_umap$layout)
 if(save_plots) png(paste0(jobName, "_expression_umap.png"), width= png_width_small, height= png_height_small, res = png_res)
@@ -179,11 +193,7 @@ plot(ans_umap$layout[, 1], ans_umap$layout[, 2], col = annotation.df$cell.col, m
 #text(-1.5, 1, "(d)")
 ```
 
-
 ```{r prepare_methods, eval=TRUE, echo=TRUE, results="asis"}
-library(awst)
-
-# raw counts (ddata)
 load(paste0(prefix, "_counts.RData"))
 load(paste0(prefix, "_expression.RData"))
 
@@ -208,7 +218,8 @@ get_hvg <- function(mat, k=1000) {
   vars <- matrixStats::rowVars(mat)
   names(vars) <- rownames(mat)
   vars <- sort(vars, decreasing = TRUE)
-  mat <- mat[names(vars)[k],]
+  mat <- mat[names(vars)[seq_len(k)],]
+  return(mat)
 }
 
 dds <- DESeqDataSetFromMatrix(ddata, colData = annotation.df,
@@ -219,14 +230,18 @@ dds <- DESeqDataSetFromMatrix(ddata, colData = annotation.df,
 system.time({
   vst <- varianceStabilizingTransformation(dds, blind=FALSE)
   vst <- assay(vst)
+  vst1000 <- get_hvg(vst, k=1000)
   vst2500 <- get_hvg(vst, k=2500)
+  vst5000 <- get_hvg(vst, k=5000)
 })
 
 system.time({
   # rlog
   rld <- rlog(dds, blind=FALSE)
   rld <- assay(rld)
+  rld1000 <- get_hvg(rld, k=1000)
   rld2500 <- get_hvg(rld, k=2500)
+  rld5000 <- get_hvg(rld, k=5000)
 })
 
 # Townes
@@ -247,8 +262,10 @@ system.time({
 
 # CPM
 system.time({
-  cpm <- get_CPM(ddata)
+  cpm <- t(get_CPM(ddata))
+  cpm1000 <- get_hvg(cpm, k=1000)
   cpm2500 <- get_hvg(cpm, k=2500)
+  cpm5000 <- get_hvg(cpm, k=5000)
 })
 
 # raw
@@ -267,31 +284,38 @@ plot_sil <- function(datamat, labs, title) {
 }
 
 methods <- list("raw"=t(log1p(as.matrix(raw))), "cpm"=t(log1p(cpm)),
-                "cpm2500"=t(log1p(cpm2500)), "fq"=t(log1p(fq)),
+                "cpm1000"=t(log1p(cpm1000)), "cpm2500"=t(log1p(cpm2500)),
+                "cpm5000"=t(log1p(cpm5000)), "fq"=t(log1p(fq)),
                 "awst"=exprData, "awst_gf"=exprData_gf, "vst"=t(vst),
-                "vst2500"=t(vst2500), "rlog"=t(rld), "rlog2500"=t(rld2500),
+                "vst1000"=t(vst1000), "vst2500"=t(vst2500),
+                "vst5000"=t(vst5000), "rlog"=t(rld), "rlog1000"=t(rld1000),
+                "rlog2500"=t(rld2500), "rlog5000"=t(rld5000),
                 "deviance"=t(res_deviance), "pearson"=t(res_pearson))
 
-results[k:(k+7),1] <- names(methods)
-results[k:(k+7),2] <- rep(prefix, length(methods))
-results[k:(k+7),3] <- sapply(seq_along(methods), function(i) {
+results[k:(k+17),1] <- names(methods)
+results[k:(k+17),2] <- rep(prefix, length(methods))
+results[k:(k+17),3] <- sapply(seq_along(methods), function(i) {
   plot_sil(methods[[i]], as.numeric(as.factor(annotation.df$cell.col)),
            names(methods[i]))
 })
 ```
 
 ```{r anova, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-r2s <- lapply(seq_along(methods), function(i) {
-  get_r2(methods[[i]], as.factor(annotation.df$cell.col))
+de_genes <- lapply(methods, get_de, as.factor(annotation.df$cell.col))
+
+results[k:(k+17), 4] <- sapply(de_genes, NCOL)
+
+r2s <- lapply(seq_along(de_genes), function(i) {
+  get_r2(de_genes[[i]], as.factor(annotation.df$cell.col))
 })
 names(r2s) <- names(methods)
 
 # prendere solo i geni DE
 
-results[k:(k+7), 4] <- sapply(r2s, mean, na.rm=TRUE)
+results[k:(k+17), 5] <- sapply(r2s, mean, na.rm=TRUE)
 
 boxplot(r2s, outline=FALSE)
-k <- k+8
+k <- k+18
 ```
 
 # sc_10x
@@ -316,14 +340,6 @@ prefix <- "sc_10x"
 save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label= "_working.RData", eval= !file.exists("sc_10x_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 ```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
@@ -366,14 +382,6 @@ prefix <- "RNAmix_celseq2"
 save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label= "_working.RData", eval= !file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 ```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
@@ -452,14 +460,6 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
 ```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
 ```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 ```{r, ref.label="silhouette", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
@@ -534,14 +534,6 @@ prefix <- "cellmix4"
 save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 ```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
