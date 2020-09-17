@@ -138,8 +138,8 @@ get_RaceID <- function(is_awst = FALSE) {
         logcounts = log2(as.matrix(ddata) + 1)
         ), colData = annotation.df)
     
-  sce <- scran_high_var(sce)
-  var.genes = rownames(sce)[rowData(sce)$hi_var]
+  #sce <- scran_high_var(sce)
+  #var.genes = rownames(sce)[rowData(sce)$hi_var]
   var.genes = rownames(sce)
   
   tmp = logcounts(sce)[var.genes,]
@@ -206,8 +206,8 @@ get_RCA <- function(is_awst =FALSE) {
     logcounts = log2(as.matrix(ddata) + 1)
   ), colData = annotation.df)
 
-  sce <- scran_high_var(sce)
-  var.genes = rownames(sce)[rowData(sce)$hi_var]
+  #sce <- scran_high_var(sce)
+  #var.genes = rownames(sce)[rowData(sce)$hi_var]
   var.genes = rownames(sce)
 
   require(preprocessCore)
@@ -252,12 +252,12 @@ get_SC3 <- function(is_awst =FALSE) {
   
   rowData(sce)$feature_symbol <- rownames(sce)
   
-  sce <- scran_high_var(sce)
+  #sce <- scran_high_var(sce)
   
 #  sce <- sce[rowData(sce)$hi_var,]
   sce <- sc3_estimate_k(sce)
   k_est <- sce@metadata$sc3$k_estimation
-  sce <- sc3(sce, ks = k_est, biology = FALSE, n_cores=3,  k_estimator = FALSE, rand_seed=2333333)
+  sce <- sc3(sce, ks = k_est, biology = FALSE, n_cores=10,  k_estimator = FALSE, rand_seed=2333333)
   
   eval(parse(text=paste0("colData(sce)$clustering <- colData(sce)$sc3_", k_est, "_clusters")))
   
@@ -285,8 +285,8 @@ get_Seurat <- function(is_awst =FALSE, resolution = 0.6) {
     colData = annotation.df
   )
   
-  sce <- scran_high_var(sce)
-  hi_var_features <- rownames(sce)[rowData(sce)$hi_var]
+  #sce <- scran_high_var(sce)
+  #hi_var_features <- rownames(sce)[rowData(sce)$hi_var]
   hi_var_features <- rownames(sce)
   
   if(!is_awst) {
@@ -335,7 +335,7 @@ get_Seurat <- function(is_awst =FALSE, resolution = 0.6) {
 get_clusterExperiment <- function(is_awst =FALSE) {
   require(clusterExperiment)
   
-  if(is_awst) {
+  if(!is_awst) {
     which_assay <- "logcounts"
   } else {
     which_assay <- "awst"
@@ -345,16 +345,20 @@ get_clusterExperiment <- function(is_awst =FALSE) {
     assays = list(
       counts = as.matrix(ddata),
       logcounts = log2(as.matrix(ddata) + 1),
-      awst = exprData
+      awst = t(exprData)
     ), 
     colData = annotation.df
   )
   
-  sce <- scran_high_var(sce)
+  if(is_awst) {
+    reducedDim(sce, "PCA") <- pprcomp$x
+  }
+  
+  #sce <- scran_high_var(sce)
 #  sce <- sce[rowData(sce)$hi_var,]
 
   se = RSEC(sce, isCount = FALSE, whichAssay = which_assay, minSizes=5,
-                reduceMethod="PCA", nReducedDims=5, ncores=3, random.seed=176201)  
+                reduceMethod="PCA", nReducedDims=5, ncores=8, random.seed=176201)  
   
   colData(sce)$clustering_res = primaryCluster(se)
 
@@ -421,9 +425,8 @@ hhc <- hclust(ddist, method = "ward.D2")
 
 aCalinski <- calinski(hhc)
 
-pprcomp <- prcomp(exprData) # Run PC analysis
-pprcomp$x <- pprcomp$x[, 1:5]
-pprcomp$rotation <- pprcomp$rotation[, 1:5]
+library(irlba)
+pprcomp <- prcomp_irlba(exprData, 5) # Run PC analysis
 
 set.seed(2020) 
 ans_Rtsne <- Rtsne(exprData, pca = FALSE) # Run TSNE
@@ -434,6 +437,7 @@ ans_umap <- umap(exprData) # Run Umap
 #if(prefix %in% c("RNAmix_celseq2", "cellmix3", "cellmix4")) {
 require(SingleCellExperiment)
 
+if(FALSE) {
   tmp <- get_RCA()
   wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
   ans_RCA_raw  <- colData(tmp)[, -wwhich]
@@ -473,15 +477,19 @@ require(SingleCellExperiment)
   tmp <- get_Seurat(is_awst = TRUE, resolution = 1.6)
   wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
   ans_Seurat_awst_HiR  <- colData(tmp)[, -wwhich]
-#}
+}
+
+tmp <- get_clusterExperiment()
+wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
+ans_clusterExp_raw <- colData(tmp)[, -wwhich]
+
+tmp <- get_clusterExperiment(is_awst = TRUE)
+wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
+ans_clusterExp_awst <- colData(tmp)[, -wwhich]
 
 save(hhc, nrow_exprData, ncol_exprData, annotation.df, aCalinski,
      pprcomp, ans_Rtsne, ans_umap, prefix, 
-     ans_RaceID_awst, ans_RaceID_raw,
-     ans_RCA_raw, ans_RCA_awst,
-     ans_SC3_raw, ans_SC3_awst, 
-     ans_Seurat_raw_LoR, ans_Seurat_awst_LoR,
-     ans_Seurat_raw_HiR, ans_Seurat_awst_HiR,
+     ans_clusterExp_awst, ans_clusterExp_raw,
      file = paste0(prefix, "_expression_working.RData"))
 
 ```
