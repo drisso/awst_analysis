@@ -71,7 +71,7 @@ png_res <- 1/300
 true_number_of_clusters <- c(3, 5, 7, 10, 10)
 names(true_number_of_clusters) <- c("sc_10x", "sc_10x_5cl", "RNAmix_celseq2", "cellmix4", "cellmix3")
 ####
-results <- matrix(NA, ncol = 8, nrow = 70)
+results <- matrix(NA, ncol = 8, nrow = 10)
 colnames(results) <- c("where", "what", "ARI", "accuracy", "purity", "avg", "noOfClust_Est", "noOfClust_Th") 
 #results <- data.frame(where = rep("", 30), what = "", ARI = NA, accuracy = NA, purity = NA, noOfClust = NA)
 k <- 0
@@ -358,7 +358,7 @@ get_clusterExperiment <- function(is_awst =FALSE) {
 #  sce <- sce[rowData(sce)$hi_var,]
 
   se = RSEC(sce, isCount = FALSE, whichAssay = which_assay, minSizes=5,
-                reduceMethod="PCA", nReducedDims=5, ncores=8, random.seed=176201)  
+                reduceMethod="PCA", nReducedDims=5, ncores=4, random.seed=176201)  
   
   colData(sce)$clustering_res = primaryCluster(se)
 
@@ -371,6 +371,7 @@ get_clusterExperiment <- function(is_awst =FALSE) {
 load("sc_10x_5cl_expression_working.RData")
 annotation.df <- annotation.df[hhc$labels,]
 ```
+
 ```{r sc_10x_5cl, eval = !file.exists("sc_10x_expression_working.RData"), echo=TRUE}
 con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x_5cl.metadata.csv.gz?raw=true"))
 annotation.df <- read.csv(textConnection(readLines(con)))
@@ -388,6 +389,7 @@ annotation.df <- annotation.df[both,]
 prefix <- "sc_10x_5cl"
 save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
+
 ```{r _working.RData, eval= !file.exists("sc_10x_expression_working.RData"), echo=TRUE}
 require(awst)
 require(EDASeq)
@@ -418,12 +420,6 @@ save(exprData, prefix, file = paste0(prefix, "_expression.RData"))
 
 nrow_exprData <- nrow(exprData)
 ncol_exprData <- ncol(exprData)
-ddist <- dist(exprData)
-save(ddist, nrow_exprData, ncol_exprData, prefix, file = paste0(prefix, "_expression_dist.RData"))
-
-hhc <- hclust(ddist, method = "ward.D2")
-
-aCalinski <- calinski(hhc)
 
 library(irlba)
 pprcomp <- prcomp_irlba(exprData, 5) # Run PC analysis
@@ -481,11 +477,11 @@ if(FALSE) {
 
 tmp <- get_clusterExperiment()
 wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-ans_clusterExp_raw <- colData(tmp)[, -wwhich]
+ans_clusterExp_raw <- colData(tmp)[, -wwhich, drop=FALSE]
 
 tmp <- get_clusterExperiment(is_awst = TRUE)
 wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-ans_clusterExp_awst <- colData(tmp)[, -wwhich]
+ans_clusterExp_awst <- colData(tmp)[, -wwhich, drop=FALSE]
 
 save(hhc, nrow_exprData, ncol_exprData, annotation.df, aCalinski,
      pprcomp, ans_Rtsne, ans_umap, prefix, 
@@ -493,63 +489,7 @@ save(hhc, nrow_exprData, ncol_exprData, annotation.df, aCalinski,
      file = paste0(prefix, "_expression_working.RData"))
 
 ```
-```{r _main_dendrogram.pdf, echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-cat("\n\n### Dendrogram of ", prefix, "\n")
-clustering.df <- data.frame(cell_line = annotation.df$cell_line, 
-                            True.col = annotation.df$cell.col,
-                            row.names = rownames(annotation.df))
-if("mRNA_amount.col" %in% colnames(annotation.df)) clustering.df$mRNA_amount.col <-  annotation.df$mRNA_amount.col
-###
-mmain  <-  paste0(prefix, " (", nrow_exprData, " cells/", ncol_exprData, " genes)")
-if(save_plots) {
-  mmain <- ""
-  png(paste0(prefix, "_expression_dist_hclust.png"), 
-      width= png_width_large, height= png_height_large, res = png_res)
-}
-hhc$height <- hhc$height/max(hhc$height)
-#mmain = paste0(jobName, " (", nrow_exprData, " cells/", ncol_exprData, " genes)")
-plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-add_Calinski_curve(from = floor(.1*length(hhc$labels)), to = floor(.9*length(hhc$labels)))
 
-#wwhere <- true_number_of_clusters[prefix]
-wwhere <- which(aCalinski[2:length(aCalinski)] - aCalinski[1:(length(aCalinski)-1)] < 0)[1]
-if(prefix == "cellmix3") wwhere <- 4
-
-hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
-clustering.df$estimate.col <- as.factor(cutree(hhc, k = wwhere))
-tt <- table(clustering.df$estimate.col, clustering.df$True.col)
-colorCode <- colnames(tt)[apply(tt, 1, which.max)]
-if(prefix == "RNAmix_celseq2") colorCode <- palette()[1:7]
-#if(prefix == "cellmix4") colorCode <- palette()[1:7]
-levels(clustering.df$estimate.col) <- colorCode
-
-clustering.col <- clustering.df[, grep(".col", colnames(clustering.df))]
-colnames(clustering.col) <- gsub(".col", "", colnames(clustering.col))
-colored_bars(colors = clustering.col, dend = as.dendrogram(hhc), y_scale = .15, y_shift = 0)
-
-tt <- table(clustering.df$cell_line, clustering.df$True.col)
-tmp <- rowSums(tt)
-pct <- paste0(round(100*tt/sum(tt), 1), "%")
-llegend <- paste(names(tmp), " (", tmp, ")", sep = "")
-ffill <- colnames(tt)[apply(tt, 1, which.max)]
-legend(floor(.7*length(hhc$labels)), 1, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = prefix, title.adj = 0)
-
-
-ARI <- adjustedRand(as.numeric(factor(clustering.df$estimate.col)), as.numeric(factor(clustering.df$True.col)))[1]
-message("adjusted Rand-index: ", round(ARI, 4))
-
-cluster_purity <- get_cluster_purity(clustering.df$True.col, clustering.df$estimate.col)
-message("cluster purity: ", round(cluster_purity, 4))
-
-cluster_accuracy <- get_cluster_accuracy(clustering.df$True.col, clustering.df$estimate.col)
-message("cluster accuracy: ", round(cluster_accuracy, 4))
-
-avg <- round(exp(log(ARI * (1 - cluster_accuracy) * (1 - cluster_purity))/3), 4)
-results[k <- k+1,] <- c(prefix, "AWST (protocol)", ARI, cluster_accuracy, cluster_purity, avg, wwhere, true_number_of_clusters[prefix])
-
-clustering.df$cell.col <- as.character(clustering.df$True.col)
-```
 ```{r PCA, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### PCA of ", prefix, "\n")
 x_legend <- 0.08; y_legend <- -1.75
@@ -563,6 +503,7 @@ plot(pprcomp$x, col = annotation.df$cell.col, main = mmain,
 #legend(x_legend, y_legend, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
 #text(x_text, y_text, "(b)")
 ```
+
 ```{r Rtsne, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### t-SNE of ", prefix, "\n")
 ans_Rtsne$Y <- scale(ans_Rtsne$Y)
@@ -583,197 +524,25 @@ plot(ans_umap$layout[, 1], ans_umap$layout[, 2], col = annotation.df$cell.col, m
 #text(-1.5, 1, "(d)")
 ```
 
-```{r raceID_awst, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### AWST + RaceID (umap) of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_RaceID_awst),]
-clustering.df$RaceID_awst <- clustering.df$tmp <- ans_RaceID_awst$clustering
-what <- "RaceID +  AWST"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_RaceID_awst$umap.1, ans_RaceID_awst$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### AWST + RaceID (default + t-SNE) of ", prefix, "\n")
-plot(ans_RaceID_awst$tsne.1, ans_RaceID_awst$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r raceID_raw, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### counts + RaceID (umap) of ", prefix, "\n")
-
-#ans_RaceID_raw <- ans_RaceID_raw[rownames(annotation.df),]
-clustering.df <- clustering.df[rownames(ans_RaceID_raw),]
-clustering.df$RaceID_raw <- clustering.df$tmp <- ans_RaceID_raw$clustering
-what <- "RaceID +  counts"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_RaceID_raw$umap.1, ans_RaceID_raw$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### AWST + RaceID (default + t-SNE) of ", prefix, "\n")
-plot(ans_RaceID_raw$tsne.1, ans_RaceID_raw$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r RCA_awst, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### AWST + RCA (pca) of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_RCA_awst),]
-clustering.df$RCA_awst <- clustering.df$tmp <- ans_RCA_awst$clustering
-what <- "RCA +  AWST"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_RCA_awst$pca.1, ans_RCA_awst$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r RCA_raw, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### counts + RCA (pca) of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_RCA_raw),]
-clustering.df$RCA_raw <- clustering.df$tmp <- ans_RCA_raw$clustering
-what <- "RCA +  counts"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_RCA_raw$pca.1, ans_RCA_raw$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r Seurat_raw_LoR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### counts + Seurat  (low resolution, pca) of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_Seurat_raw_LoR),]
-clustering.df$Seurat_raw_LoR <- clustering.df$tmp <- ans_Seurat_raw_LoR$clustering
-what <- "Seurat (LoRes) +  counts"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, col= clustering.df$tmp, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### counts + Seurat  (low resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_raw_LoR$umap.1, ans_Seurat_raw_LoR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-plot(ans_Seurat_raw_LoR$umap.1, ans_Seurat_raw_LoR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### counts + Seurat  (low resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_raw_LoR$tsne.1, ans_Seurat_raw_LoR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r Seurat_awst_LoR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### awst + Seurat  (low resolution, pca) of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_Seurat_awst_LoR),]
-clustering.df$Seurat_awst_LoR <- clustering.df$tmp <- ans_Seurat_awst_LoR$clustering
-what <- "Seurat (LoRes) +  AWST"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_Seurat_awst_LoR$pca.1, ans_Seurat_awst_LoR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, col= clustering.df$tmp, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### awst + Seurat  (low resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_awst_LoR$umap.1, ans_Seurat_awst_LoR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### awst + Seurat  (low resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_awst_LoR$tsne.1, ans_Seurat_awst_LoR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r Seurat_raw_HiR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### counts + Seurat  (high resolution, pca) of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_Seurat_raw_HiR),]
-clustering.df$Seurat_raw_HiR <- clustering.df$tmp <- ans_Seurat_raw_HiR$clustering
-what <- "Seurat (HiRes) +  counts"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_Seurat_raw_HiR$pca.1, ans_Seurat_raw_HiR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, col= clustering.df$tmp, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### counts + Seurat  (high resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_raw_HiR$umap.1, ans_Seurat_raw_HiR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### counts + Seurat  (high resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_raw_HiR$tsne.1, ans_Seurat_raw_HiR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r Seurat_awst_HiR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### awst + Seurat  (high resolution, pca) of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_Seurat_awst_HiR),]
-clustering.df$Seurat_awst_HiR <- clustering.df$tmp <- ans_Seurat_awst_HiR$clustering
-what <- "Seurat (HiRes) +  AWST"
-
-results[k <- k+1,] <- get_statistics()
-
-plot(ans_Seurat_awst_HiR$pca.1, ans_Seurat_awst_HiR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, col= clustering.df$tmp, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### awst + Seurat  (high resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_awst_HiR$umap.1, ans_Seurat_awst_HiR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-
-cat("\n\n### awst + Seurat  (high resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_awst_HiR$tsne.1, ans_Seurat_awst_HiR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
-```
-```{r SC3, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### counts + SC3 of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_SC3_raw),]
-clustering.df$SC3_raw <- clustering.df$tmp <- ans_SC3_raw$clustering
-what <- "SC3 +  counts"
-
-results[k <- k+1,] <- get_statistics()
-###
-cat("\n\n### awst + SC3 of ", prefix, "\n")
-
-clustering.df <- clustering.df[rownames(ans_SC3_awst),]
-clustering.df$SC3_awst <- clustering.df$tmp <- ans_SC3_awst$clustering
-what <- "SC3 +  AWST"
-
-results[k <- k+1,] <- get_statistics()
-```
-
 ```{r clExp, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+clustering.df <- data.frame(cell_line = annotation.df$cell_line, 
+                            True.col = annotation.df$cell.col,
+                            row.names = rownames(annotation.df))
+if("mRNA_amount.col" %in% colnames(annotation.df)) clustering.df$mRNA_amount.col <-  annotation.df$mRNA_amount.col
+
 cat("\n\n### counts + clusterExperiment of ", prefix, "\n")
 
-clustering.df <- clustering.df[rownames(ans_SC3_raw),]
-clustering.df$ClustExp_raw <- clustering.df$tmp <- ans_clusterExperiment_raw$clustering
-what <- "SC3 +  counts"
+clustering.df <- clustering.df[rownames(ans_clusterExp_raw),]
+clustering.df$ClustExp_raw <- clustering.df$tmp <- ans_clusterExp_raw$clustering_res
+what <- "clusterExperiment +  counts"
 
 results[k <- k+1,] <- get_statistics()
 ###
-cat("\n\n### awst + SC3 of ", prefix, "\n")
+cat("\n\n### awst + clusterExperiment of ", prefix, "\n")
 
-clustering.df <- clustering.df[rownames(ans_SC3_awst),]
-clustering.df$SC3_awst <- clustering.df$tmp <- ans_SC3_awst$clustering
-what <- "SC3 +  AWST"
+clustering.df <- clustering.df[rownames(ans_clusterExp_awst),]
+clustering.df$ClustExp_awst <- clustering.df$tmp <- ans_clusterExp_awst$clustering_res
+what <- "clusterExperiment +  AWST"
 
 results[k <- k+1,] <- get_statistics()
 ```
@@ -783,6 +552,7 @@ results[k <- k+1,] <- get_statistics()
 load("sc_10x_expression_working.RData")
 annotation.df <- annotation.df[hhc$labels,]
 ```
+
 ```{r sc_10x, eval = !file.exists("sc_10x_expression_working.RData"), echo=FALSE}
 con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x.metadata.csv.gz?raw=true"))
 annotation.df <- read.csv(textConnection(readLines(con)))
@@ -801,31 +571,13 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label= "_working.RData", eval= !file.exists("sc_10x_expression_working.RData"), echo=FALSE}
 ```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
 ```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 ```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 ```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
-```{r, ref.label="raceID_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="raceID_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="SC3", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 
 
@@ -871,23 +623,7 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
-```{r, ref.label="raceID_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="raceID_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="SC3", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 
 # cellmix3
@@ -968,23 +704,7 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
-```{r, ref.label="raceID_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="raceID_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="SC3", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 
 # cellmix4
@@ -1063,23 +783,7 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
 ```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
-```{r, ref.label="raceID_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="raceID_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_awst", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="RCA_raw", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_LoR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_raw_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label= "Seurat_awst_HiR", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="SC3", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 
 # Table
@@ -1092,7 +796,7 @@ results$purity <- round(as.numeric(as.character(results$purity)), 4)
 
 knitr::kable(results)
 
-write.table(results, file = paste0(jobName, "_results.tsv"), sep = "\t")
+write.table(results, file = paste0(jobName, "clExp_results.tsv"), sep = "\t")
 ```
 
 (*) with at least a cluster of size 1.
