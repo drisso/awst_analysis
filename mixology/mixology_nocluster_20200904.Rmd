@@ -50,6 +50,10 @@ BiocManager::install("drisso/awst")
 
 # Setup
 ```{r setup, message=FALSE}
+library(awst)
+library(EDASeq)
+library(SingleCellExperiment)
+
 jobName <- "mixoloy20200904"
 source(url("https://raw.githubusercontent.com/drisso/awst_analysis/master/functions.R"))
 
@@ -86,7 +90,8 @@ compute_de <- function(y, labs) {
 
 get_de <- function(datamat, labs) {
   pvals <- apply(datamat, 2, compute_de, labs)
-  return(datamat[,pvals <= 5e-5])
+  pvals <- sort(pvals)
+  return(datamat[,names(pvals)[1:500]])
 }
 ```
 
@@ -321,7 +326,7 @@ k <- k+18
 # sc_10x
 ```{r, eval = file.exists("sc_10x_expression_working.RData"), echo=FALSE}
 load("sc_10x_expression_working.RData")
-annotation.df <- annotation.df[hhc$labels,]
+# annotation.df <- annotation.df[hhc$labels,]
 ```
 ```{r sc_10x, eval = !file.exists("sc_10x_expression_working.RData"), echo=FALSE}
 con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x.metadata.csv.gz?raw=true"))
@@ -352,7 +357,7 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 # RNAmix_celseq2
 ```{r, eval = file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
 load("RNAmix_celseq2_expression_working.RData")
-annotation.df <- annotation.df[hhc$labels,]
+# annotation.df <- annotation.df[hhc$labels,]
 ```
 ```{r RNAmix_celseq2, eval = !file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
 con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/RNAmix_celseq2.metadata.csv.gz?raw=true"))
@@ -393,7 +398,7 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 # cellmix3
 ```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
 load("cellmix3_expression_working.RData")
-annotation.df <- annotation.df[hhc$labels,]
+# annotation.df <- annotation.df[hhc$labels,]
 ```
 ```{r cellmix3, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
 con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix3.metadata.csv.gz?raw=true"))
@@ -470,7 +475,7 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 # cellmix4
 ```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
 load("cellmix4_expression_working.RData")
-annotation.df <- annotation.df[hhc$labels,]
+# annotation.df <- annotation.df[hhc$labels,]
 ```
 ```{r cellmix4, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
 con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix4.metadata.csv.gz?raw=true"))
