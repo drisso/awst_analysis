@@ -60,7 +60,7 @@ source(url("https://raw.githubusercontent.com/drisso/awst_analysis/master/functi
 true_number_of_clusters <- c(3, 5, 7, 10, 10)
 names(true_number_of_clusters) <- c("sc_10x", "sc_10x_5cl", "RNAmix_celseq2", "cellmix4", "cellmix3")
 ####
-results <- matrix(NA, ncol = 5, nrow = 90)
+results <- matrix(NA, ncol = 5, nrow = 21)
 colnames(results) <- c("where", "what", "silhouette", "NDE", "R2")
 k <- 1
 save_plots <- FALSE
@@ -289,17 +289,19 @@ plot_sil <- function(datamat, labs, title) {
 }
 
 methods <- list("raw"=t(log1p(as.matrix(raw))), "cpm"=t(log1p(cpm)),
-                "cpm1000"=t(log1p(cpm1000)), "cpm2500"=t(log1p(cpm2500)),
-                "cpm5000"=t(log1p(cpm5000)), "fq"=t(log1p(fq)),
-                "awst"=exprData, "awst_gf"=exprData_gf, "vst"=t(vst),
-                "vst1000"=t(vst1000), "vst2500"=t(vst2500),
-                "vst5000"=t(vst5000), "rlog"=t(rld), "rlog1000"=t(rld1000),
-                "rlog2500"=t(rld2500), "rlog5000"=t(rld5000),
+                #"cpm1000"=t(log1p(cpm1000)), "cpm2500"=t(log1p(cpm2500)),
+                #"cpm5000"=t(log1p(cpm5000)), "fq"=t(log1p(fq)),
+                "awst"=exprData, #"awst_gf"=exprData_gf, 
+                "vst"=t(vst),
+                #"vst1000"=t(vst1000), "vst2500"=t(vst2500),
+                #"vst5000"=t(vst5000), 
+                "rlog"=t(rld), #"rlog1000"=t(rld1000),
+                #"rlog2500"=t(rld2500), "rlog5000"=t(rld5000),
                 "deviance"=t(res_deviance), "pearson"=t(res_pearson))
 
-results[k:(k+17),1] <- names(methods)
-results[k:(k+17),2] <- rep(prefix, length(methods))
-results[k:(k+17),3] <- sapply(seq_along(methods), function(i) {
+results[k:(k+6),1] <- names(methods)
+results[k:(k+6),2] <- rep(prefix, length(methods))
+results[k:(k+6),3] <- sapply(seq_along(methods), function(i) {
   plot_sil(methods[[i]], as.numeric(as.factor(annotation.df$cell.col)),
            names(methods[i]))
 })
@@ -308,7 +310,7 @@ results[k:(k+17),3] <- sapply(seq_along(methods), function(i) {
 ```{r anova, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 de_genes <- lapply(methods, get_de, as.factor(annotation.df$cell.col))
 
-results[k:(k+17), 4] <- sapply(de_genes, NCOL)
+results[k:(k+6), 4] <- sapply(de_genes, NCOL)
 
 r2s <- lapply(seq_along(de_genes), function(i) {
   get_r2(de_genes[[i]], as.factor(annotation.df$cell.col))
@@ -317,13 +319,14 @@ names(r2s) <- names(methods)
 
 # prendere solo i geni DE
 
-results[k:(k+17), 5] <- sapply(r2s, mean, na.rm=TRUE)
+results[k:(k+6), 5] <- sapply(r2s, mean, na.rm=TRUE)
 
 boxplot(r2s, outline=FALSE)
-k <- k+18
+k <- k+7
 ```
 
 # sc_10x
+
 ```{r, eval = file.exists("sc_10x_expression_working.RData"), echo=FALSE}
 load("sc_10x_expression_working.RData")
 # annotation.df <- annotation.df[hhc$labels,]
@@ -355,6 +358,7 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 
 
 # RNAmix_celseq2
+
 ```{r, eval = file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
 load("RNAmix_celseq2_expression_working.RData")
 # annotation.df <- annotation.df[hhc$labels,]
@@ -395,157 +399,6 @@ save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```{r, ref.label="anova", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 
-# cellmix3
-```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-load("cellmix3_expression_working.RData")
-# annotation.df <- annotation.df[hhc$labels,]
-```
-```{r cellmix3, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix3.metadata.csv.gz?raw=true"))
-annotation.df <- read.csv(textConnection(readLines(con)))
-annotation.df$mix <- paste0(annotation.df$H1975, annotation.df$H2228, annotation.df$HCC827)
-
-table(annotation.df$mix)
-annotation.df$mix[which(annotation.df$mix == "900")] <- "H1975"
-annotation.df$mix[which(annotation.df$mix == "810")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "801")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "711")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "720")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "702")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "630")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "603")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "504")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "540")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "522")] <- "H1975High"
-
-
-annotation.df$mix[which(annotation.df$mix == "009")] <- "HCC827"
-annotation.df$mix[which(annotation.df$mix == "018")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "108")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "027")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "117")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "207")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "306")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "036")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "045")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "405")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "225")] <- "HCC827High"
-
-
-annotation.df$mix[which(annotation.df$mix == "090")] <- "H2228"
-annotation.df$mix[which(annotation.df$mix == "081")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "180")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "072")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "171")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "270")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "360")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "063")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "450")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "054")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "252")] <- "H2228High"
-
-annotation.df$mix[which(annotation.df$mix == "111")] <- "balanced"
-annotation.df$mix[which(annotation.df$mix == "333")] <- "balanced"
-table(annotation.df$mix)
-
-annotation.df$cell_line <- annotation.df$mix
-annotation.df$cell.col <- factor(annotation.df$cell_line)
-levels(annotation.df$cell.col) <- c("gray30", "red4", "red", "red2", "green4", "green",
-                                    "green2", "cyan4", "cyan", "cyan2")
-annotation.df$cell.col <- as.character(annotation.df$cell.col)
-
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix3.count.csv.gz?raw=true"))
-ddata <- read.csv(textConnection(readLines(con)))
-
-both <- intersect(colnames(ddata), rownames(annotation.df))
-ddata <- ddata[, both]
-annotation.df <- annotation.df[both,]
-prefix <- "cellmix3"
-save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
-```
-```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="silhouette", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="anova", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-
-# cellmix4
-```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-load("cellmix4_expression_working.RData")
-# annotation.df <- annotation.df[hhc$labels,]
-```
-```{r cellmix4, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix4.metadata.csv.gz?raw=true"))
-annotation.df <- read.csv(textConnection(readLines(con)))
-annotation.df$mix <- paste0(annotation.df$H1975, annotation.df$H2228, annotation.df$HCC827)
-annotation.df$mix[which(annotation.df$mix == "900")] <- "H1975"
-annotation.df$mix[which(annotation.df$mix == "810")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "801")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "711")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "720")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "702")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "630")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "603")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "504")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "540")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "522")] <- "H1975High"
-
-
-annotation.df$mix[which(annotation.df$mix == "009")] <- "HCC827"
-annotation.df$mix[which(annotation.df$mix == "018")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "108")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "027")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "117")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "207")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "306")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "036")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "045")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "405")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "225")] <- "HCC827High"
-
-
-annotation.df$mix[which(annotation.df$mix == "090")] <- "H2228"
-annotation.df$mix[which(annotation.df$mix == "081")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "180")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "072")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "171")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "270")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "360")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "063")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "450")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "054")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "252")] <- "H2228High"
-
-annotation.df$mix[which(annotation.df$mix == "111")] <- "balanced"
-annotation.df$mix[which(annotation.df$mix == "333")] <- "balanced"
-table(annotation.df$mix)
-
-annotation.df$cell_line <- annotation.df$mix
-annotation.df$cell.col <- factor(annotation.df$cell_line)
-levels(annotation.df$cell.col) <- c("gray30", "red4", "red", "red2", "green4", "green",
-                                    "green2", "cyan4", "cyan", "cyan2")
-annotation.df$cell.col <- as.character(annotation.df$cell.col)
-
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix4.count.csv.gz?raw=true"))
-ddata <- read.csv(textConnection(readLines(con)))
-
-both <- intersect(colnames(ddata), rownames(annotation.df))
-ddata <- ddata[, both]
-annotation.df <- annotation.df[both,]
-prefix <- "cellmix4"
-save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
-```
-```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="prepare_methods", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="silhouette", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="anova", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
 
 # Session info
 ```{r}
