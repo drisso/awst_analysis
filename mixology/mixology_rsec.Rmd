@@ -71,7 +71,7 @@ png_res <- 1/300
 true_number_of_clusters <- c(3, 5, 7, 10, 10)
 names(true_number_of_clusters) <- c("sc_10x", "sc_10x_5cl", "RNAmix_celseq2", "cellmix4", "cellmix3")
 ####
-results <- matrix(NA, ncol = 8, nrow = 10)
+results <- matrix(NA, ncol = 8, nrow = 12)
 colnames(results) <- c("where", "what", "ARI", "accuracy", "purity", "avg", "noOfClust_Est", "noOfClust_Th") 
 #results <- data.frame(where = rep("", 30), what = "", ARI = NA, accuracy = NA, purity = NA, noOfClust = NA)
 k <- 0
@@ -126,219 +126,16 @@ scran_high_var = function(sce,topn=1000){
 }
 ```
 
-```{r get_RaceID, echo=FALSE}
-get_RaceID <- function(is_awst = FALSE) {
-  require(RaceID)
-  
-  if(is_awst) ddata <- as.matrix(2^t(exprData))
-  
-  sce <- SingleCellExperiment(
-      assays = list(
-        counts = as.matrix(ddata),
-        logcounts = log2(as.matrix(ddata) + 1)
-        ), colData = annotation.df)
-    
-  #sce <- scran_high_var(sce)
-  #var.genes = rownames(sce)[rowData(sce)$hi_var]
-  var.genes = rownames(sce)
-  
-  tmp = logcounts(sce)[var.genes,]
-  sc <- SCseq(as.data.frame(as.matrix(tmp)))
-  sc <- filterdata(sc, mintotal=1, minexpr = 1, minnumber = 1,
-                 LBatch = NULL, knn = 10, CGenes = NULL, FGenes = NULL, ccor = 0.4,
-                 bmode = "RaceID")
-  sc@ndata = sc@expdata
-  sc@genes = rownames(sc@ndata)
-  sc@counts = rep(1,ncol(sce))
-  names(sc@counts) = colnames(sc@ndata)
-  sc@cluster$features = sc@genes
-
-  sc <- compdist(sc, metric="pearson", FSelect = FALSE, knn = NULL)
-  sc <- clustexp(sc, sat = TRUE, samp = NULL, cln = NULL, clustnr = 30,
-               bootnr = 50, rseed = 17000, FUNcluster = "kmedoids")
-  sc <- findoutliers(sc, probthr = 0.001, outminc = 5, outlg = 2, outdistquant = 0.95)
-
-  sc <- compumap(sc)
-  tmp <- scale(sc@umap)
-  colData(sce)$umap.1 <- tmp[, 1]
-  colData(sce)$umap.2 <- tmp[, 2]
-
-  sc <- comptsne(sc)
-  tmp <- scale(sc@tsne)
-  colData(sce)$tsne.1 <- tmp[, 1]
-  colData(sce)$tsne.2 <- tmp[, 2]
-
-  colData(sce)$clustering = as.factor(sc@cpart)
-
-  return(sce)
-}
-```
-
-```{r get_RCA, echo = FALSE}
-get_RCA <- function(is_awst =FALSE) {
-
-  if(is_awst) ddata <- 2^t(exprData)
-
-  if(prefix == "sc_10x_5cl") {
-    wwhich <- grep("ENSG00", rownames(ddata))
-    rownames(ddata)[wwhich] <- gsub("ENSG0", "", rownames(ddata)[wwhich])
-    rownames(ddata) <- paste("XXXX",rownames(ddata),sep="_")
-  } else {
-    library(biomaRt)
-    mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
-    G_list <- getBM(filters="ensembl_gene_id",
-                    attributes=c("external_gene_name","ensembl_gene_id","external_gene_source"),
-                    values=rownames(ddata), mart=mart)
-    G_list = G_list[G_list$external_gene_source == "HGNC Symbol",]
-    G_list$format_name =   paste("XXXX",G_list$external_gene_name,G_list$ensembl_gene_id,sep="_")
-    rownames(G_list) = G_list$ensembl_gene_id
-
-    both <- intersect(rownames(G_list), rownames(ddata))
-    ddata <- ddata[both,]
-    G_list <- G_list[both,]
-
-    rownames(ddata) <- G_list$format_name
-  }
-  
-  sce <- SingleCellExperiment(
-    assays = list(
-    counts = as.matrix(ddata),
-    logcounts = log2(as.matrix(ddata) + 1)
-  ), colData = annotation.df)
-
-  #sce <- scran_high_var(sce)
-  #var.genes = rownames(sce)[rowData(sce)$hi_var]
-  var.genes = rownames(sce)
-
-  require(preprocessCore)
-  require(flashClust)
-  require(RCA)
-
-  tmp = logcounts(sce)[var.genes,]
-  obj = as.matrix(tmp)
-  obj = obj^10-1
-  data_obj = dataConstruct(obj)
-  data_obj = geneFilt(obj_in = data_obj);
-  data_obj = cellNormalize(data_obj);
-  data_obj = dataTransform(data_obj,"log10")
-  data_obj = featureConstruct(data_obj, method = "GlobalPanel")
-
-  set.seed(20742579)
-  data_obj = cellClust(data_obj, method = "hclust", deepSplit_wgcna = 1,
-                       min_group_Size_wgcna = 5)
-
-  colData(sce)$clustering <- data_obj$group_labels_color$groupLabel
-  pr = scale(prcomp(t(scale(data_obj$fpkm_for_clust)))$x)
-  colData(sce)$pca.1 <- pr[, 1]
-  colData(sce)$pca.2 <- pr[, 2]
-
-  return(sce)
-}
-```
-
-```{r get_SC3, echo = FALSE}
-get_SC3 <- function(is_awst =FALSE) {
-  require(SC3)
-  
-  if(is_awst) ddata <- floor(2^t(exprData))
-  
-  sce <- SingleCellExperiment(
-    assays = list(
-      counts = as.matrix(ddata),
-      logcounts = log2(as.matrix(ddata) + 1)
-    ), 
-    colData = annotation.df
-  )
-  
-  rowData(sce)$feature_symbol <- rownames(sce)
-  
-  #sce <- scran_high_var(sce)
-  
-#  sce <- sce[rowData(sce)$hi_var,]
-  sce <- sc3_estimate_k(sce)
-  k_est <- sce@metadata$sc3$k_estimation
-  sce <- sc3(sce, ks = k_est, biology = FALSE, n_cores=10,  k_estimator = FALSE, rand_seed=2333333)
-  
-  eval(parse(text=paste0("colData(sce)$clustering <- colData(sce)$sc3_", k_est, "_clusters")))
-  
-  return(sce)
-}
-  
-```
-
-```{r get_Seurat, echo = FALSE}
-get_Seurat <- function(is_awst =FALSE, resolution = 0.6) {
-  require(Seurat)
-  
-  if(is_awst) {
-    which_assay <- "logcounts"
-  } else {
-    which_assay <- "awst"
-  }
-  
-  sce <- SingleCellExperiment(
-    assays = list(
-      counts = as.matrix(ddata),
-      logcounts = log2(as.matrix(ddata) + 1),
-      awst = exprData
-    ), 
-    colData = annotation.df
-  )
-  
-  #sce <- scran_high_var(sce)
-  #hi_var_features <- rownames(sce)[rowData(sce)$hi_var]
-  hi_var_features <- rownames(sce)
-  
-  if(!is_awst) {
-  srt <- CreateSeuratObject(counts(sce), project = prefix)
-  #    DefaultAssay(srt) <- 'RNA'
-  srt <- NormalizeData(srt, normalization.method = "LogNormalize", scale.factor = 10000, verbose = FALSE)
-  #    srt <- FindVariableFeatures(srt, selection.method = "vst", nfeatures = 1000, verbose = FALSE)
-  srt <- ScaleData(srt, features = hi_var_features, verbose = FALSE)
-  } else {
-    srt <- CreateSeuratObject(assay(sce, "awst"), project= prefix)
-  }
-  
-  srt <- RunPCA(srt, features = hi_var_features, verbose = FALSE)
-  
-  srt <- FindNeighbors(srt)
-  srt <- FindClusters(object = srt, reduction.type = "pca", 
-                      dims.use = 1:5,  print.output = FALSE, save.SNN = FALSE,
-                      genes.use = NULL,
-                      k.param = 30, plot.SNN = FALSE, prune.SNN = 1/15,
-                      distance.matrix = NULL, 
-                      reuse.SNN = FALSE, force.recalc = FALSE, nn.eps = 0,
-                      modularity.fxn = 1, resolution = resolution, algorithm = 1, n.start = 100,
-                      n.iter = 10, random.seed = 0, verbose = FALSE)
-  
-  colData(sce)$clustering = as.factor(srt@active.ident)
-  
-  tmp <- scale(srt@reductions$pca@cell.embeddings)
-  colData(sce)$pca.1 <- tmp[, 1]
-  colData(sce)$pca.2 <- tmp[, 2]
-  
-  srt <- RunUMAP(srt, features = hi_var_features, verbose = FALSE)
-  tmp <- scale(srt@reductions$umap@cell.embeddings)
-  colData(sce)$umap.1 <- tmp[, 1]
-  colData(sce)$umap.2 <- tmp[, 2]
-  
-  srt <- RunTSNE(srt, features = hi_var_features)
-  tmp <- scale(srt@reductions$tsne@cell.embeddings)
-  colData(sce)$tsne.1 <- tmp[, 1]
-  colData(sce)$tsne.2 <- tmp[, 2]
-  
-  return(sce)
-}
-```
-
 ```{r get_clusterExperiment, echo = FALSE}
-get_clusterExperiment <- function(is_awst =FALSE) {
+get_clusterExperiment <- function(input = "counts") {
   require(clusterExperiment)
   
-  if(!is_awst) {
-    which_assay <- "logcounts"
-  } else {
+  if(input == "awst") {
     which_assay <- "awst"
+  } else if(input == "scry") {
+    which_assay <- "counts"
+  } else {
+    which_assay <- "logcounts"
   }
   
   sce <- SingleCellExperiment(
@@ -350,8 +147,10 @@ get_clusterExperiment <- function(is_awst =FALSE) {
     colData = annotation.df
   )
   
-  if(is_awst) {
+  if(input == "awst") {
     reducedDim(sce, "PCA") <- pprcomp$x
+  } else if(input == "scry") {
+    reducedDim(sce, "PCA") <- irlba::prcomp_irlba(t(as.matrix(ddata)), n=5)$x
   } else {
     reducedDim(sce, "PCA") <- irlba::prcomp_irlba(t(log2(as.matrix(ddata)+1)), n=5)$x
   }
@@ -360,12 +159,20 @@ get_clusterExperiment <- function(is_awst =FALSE) {
 #  sce <- sce[rowData(sce)$hi_var,]
 
   se = RSEC(sce, isCount = FALSE, whichAssay = which_assay, minSizes=5,
-                reduceMethod="PCA", nReducedDims=5, ncores=4, random.seed=176201)  
+                reduceMethod="PCA", nReducedDims=5, ncores=4, random.seed=176201,
+                dendroReduce="PCA", dendroNDims = 5, 
+                mergeMethod = "adjP", mergeDEMethod = "limma", 
+                mergeCutoff = 0.1, mergeLogFCcutoff = 1)
+  
+  plotDendrogram(se, colData = "cell.col", whichClusters = 1)
   
   colData(sce)$clustering_res = primaryCluster(se)
 
   return(sce)
 }
+
+prefix <- "sc_10x_5cl"
+
 ```
 
 # sc_10x_5cl
@@ -374,159 +181,66 @@ load("sc_10x_5cl_expression_working.RData")
 # annotation.df <- annotation.df[hhc$labels,]
 ```
 
-```{r sc_10x_5cl, eval = !file.exists("sc_10x_expression_working.RData"), echo=TRUE}
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x_5cl.metadata.csv.gz?raw=true"))
-annotation.df <- read.csv(textConnection(readLines(con)))
-annotation.df$cell.col <- factor(annotation.df$cell_line)
-levels(annotation.df$cell.col) <- c("gold", "red", "blue", "magenta", "green3")
-annotation.df$cell.col <- as.character(annotation.df$cell.col)
-annotation.df$cell_line <- paste0("mix", annotation.df$mix)
-
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/sc_10x_5cl.count.csv.gz?raw=true"))
-ddata <- read.csv(textConnection(readLines(con)))
-
-both <- intersect(colnames(ddata), rownames(annotation.df))
-ddata <- ddata[, both]
-annotation.df <- annotation.df[both,]
-prefix <- "sc_10x_5cl"
-save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
-```
-
-```{r _working.RData, eval= !file.exists("sc_10x_expression_working.RData"), echo=TRUE}
-require(awst)
-require(EDASeq)
-require(Rtsne)
-require(umap)
-require(SingleCellExperiment)
-require(clusterExperiment)
+```{r _rsec.RData, eval=!file.exists("sc_10x_5cl_rsec_working.RData"), echo=TRUE}
+library(awst)
+library(EDASeq)
+library(Rtsne)
+library(umap)
+library(SingleCellExperiment)
+library(clusterExperiment)
 ############################
-#load(paste0(prefix, "_counts.RData"))
-#load(paste0(prefix, "_expression.RData"))
+load(paste0(prefix, "_counts.RData"))
+load(paste0(prefix, "_expression.RData"))
 #######################
-no_of_detected_gene_per_sample <- colSums(ddata > 0) 
-fivenum(no_of_detected_gene_per_sample)
-ddata <- EDASeq::betweenLaneNormalization(as.matrix(ddata), which = "full", round = FALSE)
-# apply the AWS-transformation 
-tmp <- rowSums(ddata)
-sum(tmp > 0)
-tmp <- colSums(ddata)
-sum(tmp > 0)
+# no_of_detected_gene_per_sample <- colSums(ddata > 0) 
+# fivenum(no_of_detected_gene_per_sample)
+# ddata <- EDASeq::betweenLaneNormalization(as.matrix(ddata), which = "full", round = FALSE)
+# # apply the AWS-transformation 
+# tmp <- rowSums(ddata)
+# sum(tmp > 0)
+# tmp <- colSums(ddata)
+# sum(tmp > 0)
+# 
+# exprData <- awst(ddata, poscount = TRUE, full_quantile = TRUE)
+# sum(is.na(rowSums(exprData)))
+# sum(is.na(colSums(exprData)))
 
-exprData <- awst(ddata, poscount = TRUE, full_quantile = TRUE)
-sum(is.na(rowSums(exprData)))
-sum(is.na(colSums(exprData)))
-
-save(exprData, prefix, file = paste0(prefix, "_expression.RData"))
+#save(exprData, prefix, file = paste0(prefix, "_expression.RData"))
 #dim(exprData <- gene_filter(exprData))
 #write.table(exprData, file =  paste0(prefix, "_expression.tsv"), sep = "\t")
 
 nrow_exprData <- nrow(exprData)
 ncol_exprData <- ncol(exprData)
 
-library(irlba)
-pprcomp <- prcomp_irlba(exprData, 5) # Run PC analysis
-
-set.seed(2020) 
-ans_Rtsne <- Rtsne(exprData, pca = FALSE) # Run TSNE
-
-set.seed(2020) 
-ans_umap <- umap(exprData) # Run Umap
-#ans_RaceID <- ans_RaceID_raw <- NULL
-#if(prefix %in% c("RNAmix_celseq2", "cellmix3", "cellmix4")) {
-require(SingleCellExperiment)
-
-if(FALSE) {
-  tmp <- get_RCA()
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_RCA_raw  <- colData(tmp)[, -wwhich]
-
-  tmp <- get_RCA(is_awst = TRUE)
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_RCA_awst <- colData(tmp)[, -wwhich]
-
-  tmp <- get_RaceID()
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_RaceID_raw <- colData(tmp)[, -wwhich]
-  
-  tmp <- get_RaceID(is_awst = TRUE)
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_RaceID_awst <- colData(tmp)[, -wwhich]
-  
-  tmp <- get_SC3()
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_SC3_raw <- colData(tmp)[, -wwhich]
-  
-  tmp <- get_SC3(is_awst = TRUE)
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_SC3_awst  <- colData(tmp)[, -wwhich]
-  
-  tmp <- get_Seurat()
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_Seurat_raw_LoR  <- colData(tmp)[, -wwhich]
-
-  tmp <- get_Seurat(is_awst = TRUE)
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_Seurat_awst_LoR  <- colData(tmp)[, -wwhich]
-
-  tmp <- get_Seurat(resolution = 1.6)
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_Seurat_raw_HiR  <- colData(tmp)[, -wwhich]
-
-  tmp <- get_Seurat(is_awst = TRUE, resolution = 1.6)
-  wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
-  ans_Seurat_awst_HiR  <- colData(tmp)[, -wwhich]
-}
-
 tmp <- get_clusterExperiment()
 wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
 ans_clusterExp_raw <- colData(tmp)[, -wwhich, drop=FALSE]
 
-tmp <- get_clusterExperiment(is_awst = TRUE)
+tmp <- get_clusterExperiment(input = "awst")
 wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
 ans_clusterExp_awst <- colData(tmp)[, -wwhich, drop=FALSE]
+
+load(paste0(prefix, "_VST.RData"))
+tmp <- get_clusterExperiment()
+wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
+ans_clusterExp_vst <- colData(tmp)[, -wwhich, drop=FALSE]
+
+load(paste0(prefix, "_scry.RData"))
+ddata <- scryData_pearson
+tmp <- get_clusterExperiment(input = "scry")
+wwhich <- which(colnames(colData(tmp)) %in% colnames(annotation.df))
+ans_clusterExp_scry <- colData(tmp)[, -wwhich, drop=FALSE]
 
 save(nrow_exprData, ncol_exprData, annotation.df,
      pprcomp, ans_Rtsne, ans_umap, prefix, 
      ans_clusterExp_awst, ans_clusterExp_raw,
-     file = paste0(prefix, "_expression_working.RData"))
+     ans_clusterExp_vst, ans_clusterExp_scry,
+     file = paste0(prefix, "_rsec_working.RData"))
 
-```
-
-```{r PCA, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### PCA of ", prefix, "\n")
-x_legend <- 0.08; y_legend <- -1.75
-x_text <- -2.3; y_text <- 2.
-pprcomp$x <- scale(pprcomp$x)
-#
-mmain = paste0("Principal components analysis (", prefix, "; ", nrow_exprData, " cells/", ncol_exprData, " features)")
-if(save_plots) png(paste0(jobName, "_expression_prcomp_CITE6.png"), width= png_width_small, height= png_height_small, res = png_res)
-plot(pprcomp$x, col = annotation.df$cell.col, main = mmain, 
-     xlab = "first principal component", ylab = "second principal component", pch = 19)
-#legend(x_legend, y_legend, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
-#text(x_text, y_text, "(b)")
-```
-
-```{r Rtsne, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### t-SNE of ", prefix, "\n")
-ans_Rtsne$Y <- scale(ans_Rtsne$Y)
-if(save_plots) png(paste0(jobName, "_expression_Rtsne.png"), width= png_width_small, height= png_height_small, res = png_res)
-mmain = "T-distributed Stochastic Neighbor Embedding (tsne)"
-plot(ans_Rtsne$Y[, 1], ans_Rtsne$Y[, 2], col = annotation.df$cell.col, main = mmain, xlab = "", ylab = "", pch = 19)
-#legend(-2.5, -1.1, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
-#text(-2.5, 1.8, "(c)")
-```
-
-```{r umap, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-cat("\n\n### umap of ", prefix, "\n")
-ans_umap$layout <- scale(ans_umap$layout)
-if(save_plots) png(paste0(jobName, "_expression_umap.png"), width= png_width_small, height= png_height_small, res = png_res)
-mmain = "Uniform Manifold Approximation and Projection (umap)"
-plot(ans_umap$layout[, 1], ans_umap$layout[, 2], col = annotation.df$cell.col, main = mmain, xlab = "", ylab = "", pch = 19)
-#legend(1, -1.5, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
-#text(-1.5, 1, "(d)")
 ```
 
 ```{r clExp, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+load(paste0(prefix, "_rsec_working.RData"))
 clustering.df <- data.frame(cell_line = annotation.df$cell_line, 
                             True.col = annotation.df$cell.col,
                             row.names = rownames(annotation.df))
@@ -545,6 +259,24 @@ cat("\n\n### awst + clusterExperiment of ", prefix, "\n")
 clustering.df <- clustering.df[rownames(ans_clusterExp_awst),]
 clustering.df$ClustExp_awst <- clustering.df$tmp <- ans_clusterExp_awst$clustering_res
 what <- "clusterExperiment +  AWST"
+
+results[k <- k+1,] <- get_statistics()
+
+###
+cat("\n\n### vst + clusterExperiment of ", prefix, "\n")
+
+clustering.df <- clustering.df[rownames(ans_clusterExp_vst),]
+clustering.df$ClustExp_vst <- clustering.df$tmp <- ans_clusterExp_vst$clustering_res
+what <- "clusterExperiment +  VST"
+
+results[k <- k+1,] <- get_statistics()
+
+###
+cat("\n\n### scry + clusterExperiment of ", prefix, "\n")
+
+clustering.df <- clustering.df[rownames(ans_clusterExp_scry),]
+clustering.df$ClustExp_scry <- clustering.df$tmp <- ans_clusterExp_scry$clustering_res
+what <- "clusterExperiment +  Townes"
 
 results[k <- k+1,] <- get_statistics()
 ```
@@ -571,13 +303,8 @@ annotation.df <- annotation.df[both,]
 prefix <- "sc_10x"
 save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
-```{r, ref.label= "_working.RData", eval= !file.exists("sc_10x_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+
+```{r, ref.label= "_working.RData", eval= !file.exists("sc_10x_rsec_working.RData"), echo=FALSE}
 ```
 ```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
@@ -616,178 +343,11 @@ annotation.df <- annotation.df[both,]
 prefix <- "RNAmix_celseq2"
 save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
 ```
-```{r, ref.label= "_working.RData", eval= !file.exists("RNAmix_celseq2_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
+```{r, ref.label= "_working.RData", eval= !file.exists("RNAmix_celseq2_rsec_working.RData"), echo=FALSE}
 ```
 ```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 ```
 
-# cellmix3
-```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-load("cellmix3_expression_working.RData")
-# annotation.df <- annotation.df[hhc$labels,]
-```
-```{r cellmix3, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix3.metadata.csv.gz?raw=true"))
-annotation.df <- read.csv(textConnection(readLines(con)))
-annotation.df$mix <- paste0(annotation.df$H1975, annotation.df$H2228, annotation.df$HCC827)
-
-table(annotation.df$mix)
-annotation.df$mix[which(annotation.df$mix == "900")] <- "H1975"
-annotation.df$mix[which(annotation.df$mix == "810")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "801")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "711")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "720")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "702")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "630")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "603")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "504")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "540")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "522")] <- "H1975High"
-
-
-annotation.df$mix[which(annotation.df$mix == "009")] <- "HCC827"
-annotation.df$mix[which(annotation.df$mix == "018")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "108")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "027")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "117")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "207")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "306")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "036")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "045")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "405")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "225")] <- "HCC827High"
-
-
-annotation.df$mix[which(annotation.df$mix == "090")] <- "H2228"
-annotation.df$mix[which(annotation.df$mix == "081")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "180")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "072")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "171")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "270")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "360")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "063")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "450")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "054")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "252")] <- "H2228High"
-
-annotation.df$mix[which(annotation.df$mix == "111")] <- "balanced"
-annotation.df$mix[which(annotation.df$mix == "333")] <- "balanced"
-table(annotation.df$mix)
-
-annotation.df$cell_line <- annotation.df$mix
-annotation.df$cell.col <- factor(annotation.df$cell_line)
-levels(annotation.df$cell.col) <- c("gray30", "red4", "red", "red2", "green4", "green",
-                                    "green2", "cyan4", "cyan", "cyan2")
-annotation.df$cell.col <- as.character(annotation.df$cell.col)
-
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix3.count.csv.gz?raw=true"))
-ddata <- read.csv(textConnection(readLines(con)))
-
-both <- intersect(colnames(ddata), rownames(annotation.df))
-ddata <- ddata[, both]
-annotation.df <- annotation.df[both,]
-prefix <- "cellmix3"
-save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
-```
-```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-
-# cellmix4
-```{r, eval = file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-load("cellmix4_expression_working.RData")
-# annotation.df <- annotation.df[hhc$labels,]
-```
-```{r cellmix4, eval = !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix4.metadata.csv.gz?raw=true"))
-annotation.df <- read.csv(textConnection(readLines(con)))
-annotation.df$mix <- paste0(annotation.df$H1975, annotation.df$H2228, annotation.df$HCC827)
-annotation.df$mix[which(annotation.df$mix == "900")] <- "H1975"
-annotation.df$mix[which(annotation.df$mix == "810")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "801")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "711")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "720")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "702")] <- "H1975Low"
-annotation.df$mix[which(annotation.df$mix == "630")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "603")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "504")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "540")] <- "H1975High"
-annotation.df$mix[which(annotation.df$mix == "522")] <- "H1975High"
-
-
-annotation.df$mix[which(annotation.df$mix == "009")] <- "HCC827"
-annotation.df$mix[which(annotation.df$mix == "018")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "108")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "027")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "117")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "207")] <- "HCC827Low"
-annotation.df$mix[which(annotation.df$mix == "306")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "036")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "045")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "405")] <- "HCC827High"
-annotation.df$mix[which(annotation.df$mix == "225")] <- "HCC827High"
-
-
-annotation.df$mix[which(annotation.df$mix == "090")] <- "H2228"
-annotation.df$mix[which(annotation.df$mix == "081")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "180")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "072")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "171")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "270")] <- "H2228Low"
-annotation.df$mix[which(annotation.df$mix == "360")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "063")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "450")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "054")] <- "H2228High"
-annotation.df$mix[which(annotation.df$mix == "252")] <- "H2228High"
-
-annotation.df$mix[which(annotation.df$mix == "111")] <- "balanced"
-annotation.df$mix[which(annotation.df$mix == "333")] <- "balanced"
-table(annotation.df$mix)
-
-annotation.df$cell_line <- annotation.df$mix
-annotation.df$cell.col <- factor(annotation.df$cell_line)
-levels(annotation.df$cell.col) <- c("gray30", "red4", "red", "red2", "green4", "green",
-                                    "green2", "cyan4", "cyan", "cyan2")
-annotation.df$cell.col <- as.character(annotation.df$cell.col)
-
-con <- gzcon(url("https://github.com/LuyiTian/sc_mixology/blob/master/data/csv/cellmix4.count.csv.gz?raw=true"))
-ddata <- read.csv(textConnection(readLines(con)))
-
-both <- intersect(colnames(ddata), rownames(annotation.df))
-ddata <- ddata[, both]
-annotation.df <- annotation.df[both,]
-prefix <- "cellmix4"
-save(ddata, annotation.df, prefix, file = paste0(prefix, "_counts.RData"))
-```
-```{r, ref.label= "_working.RData", eval= !file.exists("cellmix4_expression_working.RData"), echo=FALSE}
-```
-```{r, ref.label="_main_dendrogram.pdf", echo=FALSE, eval=TRUE, fig.width=30, fig.height=13, echo=FALSE, eval=TRUE, results='asis'}
-```
-```{r, ref.label="PCA", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="Rtsne", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="umap", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
-```{r, ref.label="clExp", eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
-```
 
 # Table
 ```{r, echo=FALSE}
