@@ -1,5 +1,5 @@
 ---
-title: "Code to reproduce the analyses of the AWST paper: Analysis of the Synthetic data<br/> Figure 2 and 3,<br/> Supplementary Figures 1, 2, 3, and 4."
+title: "Code to reproduce the analyses of the AWST paper: Analysis of the Synthetic data<br/> Figure 2 and 3,<br/> Supplementary Figures 1, 2, 3, and 4.,<br/>Supplementary table 2,<br/>Updated after review."
 author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
 date:  '`r format(Sys.time(), "%d %B, %Y")`'
 output: 
@@ -123,14 +123,14 @@ save(ddata, annotation.df, feature_annotation, clust.col, file = "synthetic20200
 
 ```{r setup, echo=FALSE, message=FALSE}
 rm(list = ls())
-setwd("~/Dropbox/AWST/gitHub/SD20200413/")
+setwd("~/Dropbox/AWST/gitHub/Synthetic20201003/")
 library(knitr)
 opts_chunk$set(echo = FALSE, fig.height = 4.5, fig.width = 11, fig.align = "center")
 library(cluster)
 library(dendextend)
 library(clues)
 library(awst)
-jobName <- "SD20200427"
+jobName <- "SE20201003"
 ###
 # get data from gitHub
 base_path <- "https://raw.githubusercontent.com/drisso/awst_analysis/master/"
@@ -146,7 +146,6 @@ rm(ttable)
 tt <- table(annotation.df$sample, annotation.df$sample.col)
 clust.col <- colnames(tt)[apply(tt, 1, which.max)]
 names(clust.col) <- rownames(tt)
-#load("synthetic20200413.RData")
 ###
 thisPalette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99") # from ConsensusClusterPlus
 png_width <- 600
@@ -158,9 +157,10 @@ y_scale_ <- -0.1
 y_shift_ <- -0.13
 source(url(paste0(base_path, "functions.R")))
 source("~/Dropbox/consensus/pkg/consensusFun20200415.R")
-ARIvalues <- data.frame(row.names = c("HC", "CCP1", "CCP2"), AWST = rep(NA, 3), Hart = rep(NA, 3), Radovich = rep(NA, 3), TCGA = rep(NA, 3), FPKM2500 = rep(NA, 3), FPKM5K = rep(NA, 3))
+results <- matrix(NA, ncol = 8, nrow = 150)
+colnames(results) <- c("what", "with", "ECA", "ECP", "ARI", "G", "ASW", "timing") 
+k <- 0
 ```
-
 
 
 # Figure 2
@@ -168,12 +168,12 @@ Performance of different data pre-processing paired with the hierarchical cluste
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_AWST.png"></td>
-<td><img src="./SD20200427_Hart.png"></td>
+<td><img src="./SE20201003_AWST.png"></td>
+<td><img src="./SE20201003_Hart.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_Radovich.png"></td>
-<td><img src="./SD20200427_TCGA.png"></td>
+<td><img src="./SE20201003_Radovich.png"></td>
+<td><img src="./SE20201003_TCGA.png"></td>
 </tr>
 </tbody>
 </table>
@@ -181,20 +181,32 @@ Performance of different data pre-processing paired with the hierarchical cluste
 
 
 # Supplementary Figure 1
-(Extended Figure 2) Performance of different data pre-processing paired with the hierarchical clustering (Euclidean distance, Ward's linkage). a) AWST data pre-processing; b) Hart's data pre-processing; c) Radovich's data pre-processing; d) TCGA data pre-processing; e) FPKM pre-processing with top 2,500 features according to standard-deviation; f) FPKM pre-processing with top 5,000 features according to standard-deviation. The "sample" bar indicates the true partition, and the "clust" bar indicates the inferred partition obtained by cutting the tree to get 5 clusters. The Calinski-Harabasz curve is superimposed in each panel.
+(Extended Figure 2) Performance of different data pre-processing paired with the hierarchical clustering (Euclidean distance, Ward's linkage). a) AWST data pre-processing; b) Hart's data pre-processing; c) Radovich's data pre-processing; d) TCGA data pre-processing; e) FPKM pre-processing with top 2,500 features according to standard-deviation; f) FPKM pre-processing with top 5,000 features according to standard-deviation; g) rlog pre-processing; h) VST pre-processing; i) Townes' transformation (null residuals with deviance); l) Townes' transformation (null residuals with pearson). The "sample" bar indicates the true partition, and the "clust" bar indicates the inferred partition obtained by cutting the tree to get 5 clusters. The Calinski-Harabasz curve is superimposed in each panel.
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_AWST.png"></td>
-<td><img src="./SD20200427_Hart.png"></td>
+<td><img src="./SE20201003_AWST.png"></td>
+<td><img src="./SE20201003_Hart.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_Radovich.png"></td>
-<td><img src="./SD20200427_TCGA.png"></td>
+<td><img src="./SE20201003_Radovich.png"></td>
+<td><img src="./SE20201003_TCGA.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_FPKM25.png"></td>
-<td><img src="./SD20200427_FPKM5k.png"></td>
+<td><img src="./SE20201003_FPKM25.png"></td>
+<td><img src="./SE20201003_FPKM5k.png"></td>
+</tr>
+
+
+<tr>
+<td><img src="./SE20201003_rlog.png"></td>
+<td><img src="./SE20201003_vst.png"></td>
+</tr>
+
+
+<tr>
+<td><img src="./SE20201003_scry_dev.png"></td>
+<td><img src="./SE20201003_scry_pears.png"></td>
 </tr>
 </tbody>
 </table>
@@ -204,78 +216,88 @@ Performance of different data pre-processing paired with the hierarchical cluste
 
 
 # Supplementary Figure 2
-Study for the synthetic data of the effects of data pre-processing on the compactness of groups respect to the theoretical partition and Euclidean distance. top/left) AWST; top/right) Hart; mid/left) Radovich; mid/right) TCGA; bottom/left) FPKM pre-processing with top 2500 features according to standard-deviation; bottom/right) FPKM pre-processing with top 5000 features according to standard-deviation.
+Study for the synthetic data of the effects of data pre-processing on the compactness of groups respect to the theoretical partition and Euclidean distance. a) AWST; b) Hart; c) Radovich; d) TCGA; e) FPKM pre-processing with top 2500 features according to standard-deviation; f) FPKM pre-processing with top 5000 features according to standard-deviation; g) rlog pre-processing; h) VST pre-processing; i) Townes' transformation (null residuals with deviance); l) Townes' transformation (null residuals with pearson).
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_AWST_silhouttes.png"></td>
-<td><img src="./SD20200427_Hart_silhouttes.png"></td>
+<td><img src="./SE20201003_AWST_silhouttes.png"></td>
+<td><img src="./SE20201003_Hart_silhouttes.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_Radovich_silhouttes.png"></td>
-<td><img src="./SD20200427_TCGA_silhouttes.png"></td>
+<td><img src="./SE20201003_Radovich_silhouttes.png"></td>
+<td><img src="./SE20201003_TCGA_silhouttes.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_FPKM25_silhouttes.png"></td>
-<td><img src="./SD20200427_FPKM5k_silhouttes.png"></td>
-</tr>
-</tbody>
-</table>
-
-# Figure 3
-Performance of different data pre-processing paired with ConsensusClusterPlus (inner and outer average linkage with Pearson's correlation as distance matrix). top/left) AWST data pre-processing; top/right) Hart's data pre-processing; bottom/left) Radovich's protocol; bottom/right) TCGA data protocol; bottom/left) 
-- Le figure sono nello stesso ordine di Figure 2
-<table>
-<tbody>
-<tr>
-<td><img src="./SD20200427_ccp_hclust_AWST_consensus.png"></td>
-<td><img src="./SD20200427_ccp_hclust_Hart_consensus.png"></td>
+<td><img src="./SE20201003_FPKM25_silhouttes.png"></td>
+<td><img src="./SE20201003_FPKM5k_silhouttes.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_ccp_hclust_Radovich_consensus.png"></td>
-<td><img src="./SD20200427_ccp_hclust_TCGA_consensus.png"></td>
+<td><img src="./SE20201003_rlog_silhouttes.png"></td>
+<td><img src="./SE20201003_vst_silhouttes.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_dev_silhouttes.png"></td>
+<td><img src="./SE20201003_scry_pears_silhouttes.png"></td>
 </tr>
 </tbody>
 </table>
 
 
 # Supplementary Figure 3
-(Extended Figure 3) Performance of different data pre-processing paired with ConsensusClusterPlus (inner and outer average linkage with Pearson's correlation as distance matrix). top/left) AWST data pre-processing; top/right) Hart's data pre-processing; mid/left) Radovich's protocol; mid/right) TCGA data protocol; bottom/left) FPKM pre-processing with top 2{,}500 features according to standard-deviation; bottom/right) FPKM pre-processing with top 5{,}000 features according to standard-deviation. The "sample'' bar indicates the true partition, and the "consensus'' bar indicates the inferred partition obtained by requiring 5 clusters.
+Performance of different data pre-processing paired with ConsensusClusterPlus (inner and outer average linkage with Pearson's correlation as distance matrix). a) AWST data pre-processing; b) Hart's data pre-processing; c) Radovich's protocol; d) TCGA data protocol; e) FPKM pre-processing with top 2,500 features according to standard-deviation; f) FPKM pre-processing with top 5,000 features according to standard-deviation; g) rlog pre-processing; h) VST pre-processing; i) Townes' transformation (null residuals with deviance); l) Townes' transformation (null residuals with pearson). The "sample'' bar indicates the true partition, and the "consensus'' bar indicates the inferred partition obtained by requiring 5 clusters.
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_ccp_hclust_AWST_consensus.png"></td>
-<td><img src="./SD20200427_ccp_hclust_Hart_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_AWST_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_Hart_consensus.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_ccp_hclust_Radovich_consensus.png"></td>
-<td><img src="./SD20200427_ccp_hclust_TCGA_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_Radovich_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_TCGA_consensus.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_ccp_hclust_FPKM25_consensus.png"></td>
-<td><img src="./SD20200427_ccp_hclust_FPKM5k_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_FPKM25_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_FPKM5k_consensus.png"></td>
 </tr>
+<tr>
+<td><img src="./SE20201003_ccp_hclust_rlog_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_vst_consensus.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_ccp_hclust_scry_dev_consensus.png"></td>
+<td><img src="./SE20201003_ccp_hclust_scry_pears_consensus.png"></td>
+</tr>
+</tbody>
 </tbody>
 </table>
 
 
 
 # Supplementary Figure 4
-Performance of different data pre-processing paired with ConsensusClusterPlus (Euclidean distance and PAM method). top/left) AWST data pre-processing; top/right) Hart's data pre-processing; mid/left) Radovich's pre-processing; mid/right) TCGA data pre-processing; bottom/left) FPKM pre-processing with top 2{,}500 features according to standard-deviation; bottom/right) FPKM pre-processing with top 5{,}000 features according to standard-deviation. The "sample'' bar indicates the true partition, and the "consensus'' bar indicates the inferred partition obtained by requiring 5 clusters.
+Performance of different data pre-processing paired with ConsensusClusterPlus (Euclidean distance and PAM method). a) AWST data pre-processing; b) Hart's data pre-processing; c) Radovich's pre-processing; d) TCGA data pre-processing; e) FPKM pre-processing with top 2,500 features according to standard-deviation; f) FPKM pre-processing with top 5,000 features according to standard-deviation; g) rlog pre-processing; h) VST pre-processing; i) Townes' transformation (null residuals with deviance); l) Townes' transformation (null residuals with pearson). The "sample'' bar indicates the true partition, and the "consensus'' bar indicates the inferred partition obtained by requiring 5 clusters.
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_ccpPAM_hclust_AWST_consensus.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_Hart_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_AWST_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_Hart_consensus.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_ccpPAM_hclust_Radovich_consensus.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_TCGA_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_Radovich_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_TCGA_consensus.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_ccpPAM_hclust_FPKM25_consensus.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_FPKM5k_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_FPKM25_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_FPKM5k_consensus.png"></td>
 </tr>
+<tr>
+<td><img src="./SE20201003_ccpPAM_hclust_rlog_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_vst_consensus.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_dev_consensus.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_pears_consensus.png"></td>
+</tr>
+</tbody>
 </tbody>
 </table>
 
@@ -285,7 +307,10 @@ Performance of different data pre-processing paired with ConsensusClusterPlus (E
 # AWST procedure
 ## hclust (Euclidean/Ward)
 ```{r AWST}
-exprData <- awst(ddata)
+system.time({exprData <- awst(ddata)})
+#   user  system elapsed 
+#  0.832   0.016   0.848 
+timing <- c(0.832, 0.016, 0.848)
 #dim(exprData <- gene_filter(exprData)) #[1]  150 5575
 mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
 hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
@@ -295,21 +320,25 @@ if(save_png) png(file = paste0(jobName, "_AWST.png"), width = png_width, height 
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["HC", "AWST"] <- tmp
 add_Calinski_curve(from = 25, to = 120)
 text(-1, .96, "(a)")
+dev.off()
+
 if(save_png) png(file = paste0(jobName, "_AWST_silhouttes.png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-plot(ssil, main = mmain, col = clust.col)
+plot(ssil, main = paste0("(a) ", mmain), col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("AWST", "HC", tmp, round(timing[3], 4))
 ```
 
 ## ConsensusClusterPlus (default parameters)
@@ -330,28 +359,32 @@ if(!file.exists(paste0(jobName, "_ccp_hclust_AWST.RData"))) {
   } else load(paste0(jobName, "_ccp_hclust_AWST.RData"))
 mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
 aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_ccp_hclust_AWST.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, 150, hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-text(-1, .96, "(e)")
+dev.off()
+
 tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP1", "AWST"] <- tmp
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("AWST", "CCP1", tmp, NA)
 
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccp_hclust_AWST_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(a) ", mmain))
+dev.off()
 }
 ```
 
@@ -359,15 +392,17 @@ plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thi
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_AWST/consensus008.png"></td>
-<td><img src="./SD20200427_AWST/consensus009.png"></td>
+<td><img src="./SE20201003_AWST/consensus008.png"></td>
+<td><img src="./SE20201003_AWST/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_AWST/consensus005.png"></td>
-<td><img src="./SD20200427_ccp_hclust_AWST_consensus.png"></td>
+<td><img src="./SE20201003_AWST/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_AWST_consensus.png"></td>
 </tr>
 </tbody>
 </table>
+
+
 
 ## ConsensusClusterPlus (PAM)
 Result of ConsensuClusterPlus with clusterAlg = "pam" and distance = "euclidean" (other parameters left to default)
@@ -388,51 +423,62 @@ if(!file.exists(paste0(jobName, "_ccpPAM_hclust_AWST.RData"))) {
   } else load(paste0(jobName, "_ccpPAM_hclust_AWST.RData"))
 mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
 aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_AWST.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, 150, hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-text(-1, .96, "(e)")
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP2", "AWST"] <- tmp
+dev.off()
+
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccpPAM_hclust_AWST_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(a) ", mmain))
+dev.off()
 }
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("AWST", "CCP2", tmp, NA)
 ```
 
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_AWST_PAM/consensus008.png"></td>
-<td><img src="./SD20200427_AWST_PAM/consensus009.png"></td>
+<td><img src="./SE20201003_AWST_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_AWST_PAM/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_AWST_PAM/consensus005.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_AWST_consensus.png"></td>
+<td><img src="./SE20201003_AWST_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_AWST_consensus.png"></td>
 </tr>
 </tbody>
 </table>
+
 
 # Hart 2013
 [Finding the active genes in deep RNA-seq gene expression studies](https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-14-778)
 
 ## hclust (Euclidean/Ward)
 ```{r Hart2013}
-exprData <- get_FPKM(ddata, feature_annotation$GeneLength)
-exprData <- get_Hart2013(exprData)
+system.time({
+  exprData <- get_FPKM(ddata, feature_annotation$GeneLength)
+  exprData <- get_Hart2013(exprData)
+})
+#   user  system elapsed 
+#  0.579   0.000   0.580 
+timing <- c(0.579, 0.000, 0.580)
 #mean(colMeans(exprData) > -3) # 1
 mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
 ###
@@ -445,7 +491,7 @@ add_Calinski_curve(from = 25, to = 120)
 ###
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, 150, hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 tt <- table(clustering, annotation.df$sample.col)
@@ -454,12 +500,16 @@ tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
 text(-1, .96, "(b)")
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["HC", "Hart"] <- tmp
+dev.off()
+
 if(save_png) png(file = paste0(jobName, "_Hart_silhouttes.png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-plot(ssil, main = mmain, col = clust.col)
+plot(ssil, main = paste0("(b) ", mmain), col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("Hart", "HC", tmp, round(timing[3], 4))
 ```
 
 
@@ -489,33 +539,38 @@ plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
 tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP1", "Hart"] <- tmp
-text(-1, .96, "(f)")
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+#ARIvalues["CCP1", "Hart"] <- tmp["ari"]
+results[k <- k+1,] <- c("Hart", "CCP1", tmp, NA)
+
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccp_hclust_Hart_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(b) ", mmain))
+  dev.off()
 }
 ```
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_Hart/consensus008.png"></td>
-<td><img src="./SD20200427_Hart/consensus009.png"></td>
+<td><img src="./SE20201003_Hart/consensus008.png"></td>
+<td><img src="./SE20201003_Hart/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_Hart/consensus005.png"></td>
-<td><img src="./SD20200427_ccp_hclust_Hart_consensus.png"></td>
+<td><img src="./SE20201003_Hart/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_Hart_consensus.png"></td>
 </tr>
 </tbody>
 </table>
@@ -547,45 +602,49 @@ plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP2", "Hart"] <- tmp
-text(-1, .96, "(f)")
+dev.off()
+
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccpPAM_hclust_Hart_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
   plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
-       clusterColors = thisPalette)
+       clusterColors = thisPalette, main = paste0("(b) ", mmain))
+  dev.off()
 }
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+
+results[k <- k+1,] <- c("Hart", "CCP2", tmp, NA)
 ```
 
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_Hart_PAM/consensus008.png"></td>
-<td><img src="./SD20200427_Hart_PAM/consensus009.png"></td>
+<td><img src="./SE20201003_Hart_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_Hart_PAM/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_Hart_PAM/consensus005.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_Hart_consensus.png"></td>
+<td><img src="./SE20201003_Hart_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_Hart_consensus.png"></td>
 </tr>
 </tbody>
 </table>
-
 
 # Radovich (2018) procedure
 [The Integrated Genomic Landscape of Thymic Epithelial Tumors](https://www.cell.com/cancer-cell/fulltext/S1535-6108(18)30003-5)
 
 ## hclust (Euclidean/Ward)
 ```{r Radovich, echo=FALSE}
+system.time({
 #After restricting to genes with at least 75% non-zero RSEM values,
   tmp <- rowMeans(ddata > 0, na.rm = TRUE)
   rdata <- ddata[which(tmp >= 0.75),] #[1] 14731   150
@@ -600,6 +659,10 @@ if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   mmedian <- apply(rdata, 1, median)
   mmad <- apply(rdata, 1, mad)
   exprData <- scale(t(rdata), center = mmedian, scale = mmad)
+})
+#   user  system elapsed 
+#  1.128   0.003   1.135 
+timing <- c(1.128, 0.003, 1.135)
 ###
 mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
 hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
@@ -609,21 +672,25 @@ if(save_png) png(file = paste0(jobName, "_Radovich.png"), width = png_width, hei
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["HC", "Radovich"] <- tmp
 add_Calinski_curve(from = 25, to = 120)
 text(-1, .96, "(c)")
+dev.off()
+
 if(save_png) png(file = paste0(jobName, "_Radovich_silhouttes.png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-plot(ssil, main = mmain, col = clust.col)
+plot(ssil, main = paste0("(c) ", mmain), col = clust.col)
+
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("Radovich", "HC", tmp, round(timing[3], 4))
 ```
 
 ## ConsensusClusterPlus (default parameters)
@@ -644,39 +711,44 @@ if(!file.exists(paste0(jobName, "_ccp_hclust_Radovich.RData"))) {
 ###
 mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
 aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_ccp_hclust_Radovich.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP1", "Radovich"] <- tmp
 text(-1, .96, "(c)")
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Radovich", "CCP1", tmp, NA)
+
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccp_hclust_Radovich_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(c) ", mmain))
+dev.off()
 }
 ```
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_Radovich2018/consensus008.png"></td>
-<td><img src="./SD20200427_Radovich2018/consensus009.png"></td>
+<td><img src="./SE20201003_Radovich2018/consensus008.png"></td>
+<td><img src="./SE20201003_Radovich2018/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_Radovich2018/consensus005.png"></td>
-<td><img src="./SD20200427_ccp_hclust_Radovich_consensus.png"></td>
+<td><img src="./SE20201003_Radovich2018/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_Radovich_consensus.png"></td>
 </tr>
 </tbody>
 </table>
@@ -704,10 +776,10 @@ aCalinski <- calinski(hhc, gMax = 7)
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_Radovich.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
@@ -715,36 +787,33 @@ tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
 text(-1, .96, "(e)")
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP2", "Radovich"] <- tmp
 
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccpPAM_hclust_Radovich_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(c) ", mmain))
+  dev.off()
 }
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Radovich", "CCP2", tmp, NA)
 ```
 
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_Radovich2018_PAM/consensus008.png"></td>
-<td><img src="./SD20200427_Radovich2018_PAM/consensus009.png"></td>
+<td><img src="./SE20201003_Radovich2018_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_Radovich2018_PAM/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_Radovich2018_PAM/consensus005.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_Radovich_consensus.png"></td>
+<td><img src="./SE20201003_Radovich2018_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_Radovich_consensus.png"></td>
 </tr>
 </tbody>
 </table>
-
-
-
-
-
-
 
 
 
@@ -755,8 +824,10 @@ plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thi
 ```{r TCGA2015}
 #... using RSEM (Li and Dewey, 2011) and normalized within-sample to a fixed upper quartile. 
   suppressPackageStartupMessages(require(EDASeq))
+
+system.time({
   ans <- newSeqExpressionSet(ddata)
-  ans <- betweenLaneNormalization(ans, which = "upper", round = FALSE) #Davide
+  ans <- betweenLaneNormalization(ans, which = "upper", round = FALSE) 
   normCounts <- normCounts(ans)
 #Gene-level data was restricted to genes expressed in at least 70% of samples. 
   tmp <- rowMeans(normCounts > 0)
@@ -770,6 +841,10 @@ plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thi
 #The most variable genes were selected as the 1500 genes with the highest median absolute deviation. 
   tmp <- tail(sort(apply(exprData, 2, mad)), 1500)
   exprData <- exprData[, names(tmp)]#[1]  150 1500
+})
+#   user  system elapsed 
+#  3.302   0.034   3.335 
+timing <- c(3.302, 0.034, 3.335)
 ###
 mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
 hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
@@ -779,21 +854,22 @@ if(save_png) png(file = paste0(jobName, "_TCGA.png"), width = png_width, height 
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["HC", "TCGA"] <- tmp
 add_Calinski_curve(from = 25, to = 120)
 text(-1, .96, "(d)")
 if(save_png) png(file = paste0(jobName, "_TCGA_silhouttes.png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-plot(ssil, main = mmain, col = clust.col)
+plot(ssil, main = paste0("(d) ", mmain), col = clust.col)
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("TCGA", "HC", tmp, round(timing[3], 4))
 ```
 
 ## ConsensusClusterPlus (default parameters)
@@ -805,7 +881,6 @@ if(!file.exists(paste0(jobName, "_ccp_hclust_TCGA.RData"))) {
   set.seed(20200427)
   ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson",
                               title = paste0(jobName, "_TCGA2015"), plot = "png")
-#  ddist <- as.dist(1 - cor(t(exprData)))
   ncol_exprData <- ncol(exprData)
   nrow_exprData <- nrow(exprData)
   ccp <- ans[[5]]
@@ -822,7 +897,7 @@ plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
@@ -830,26 +905,30 @@ tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
 text(-1, .96, "(d)")
+dev.off()
+
 tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP1", "TCGA"] <- tmp
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("TCGA", "CCP1", tmp, NA)
 
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccp_hclust_TCGA_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(d) ", mmain))
+  dev.off()
 }
 ```
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_TCGA2015/consensus008.png"></td>
-<td><img src="./SD20200427_TCGA2015/consensus009.png"></td>
+<td><img src="./SE20201003_TCGA2015/consensus008.png"></td>
+<td><img src="./SE20201003_TCGA2015/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_TCGA2015/consensus005.png"></td>
-<td><img src="./SD20200427_ccp_hclust_TCGA_consensus.png"></td>
+<td><img src="./SE20201003_TCGA2015/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_TCGA_consensus.png"></td>
 </tr>
 </tbody>
 </table>
@@ -865,7 +944,6 @@ if(!file.exists(paste0(jobName, "_ccpPAM_hclust_TCGA.RData"))) {
   ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
                               clusterAlg = "pam", distance = "euclidean",
                               title = paste0(jobName, "_TCGA2015_PAM"), plot = "png")
-#  ddist <- as.dist(1 - cor(t(exprData)))
   ncol_exprData <- ncol(exprData)
   nrow_exprData <- nrow(exprData)
   ccp <- ans[[5]]
@@ -873,7 +951,7 @@ if(!file.exists(paste0(jobName, "_ccpPAM_hclust_TCGA.RData"))) {
   hhc <- ccp$consensusTree
   save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_TCGA.RData"))
   } else load(paste0(jobName, "_ccpPAM_hclust_TCGA.RData"))
-###
+  ###
 mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
 aCalinski <- calinski(hhc, gMax = 7)
 hhc$height <- hhc$height/max(hhc$height)
@@ -882,7 +960,7 @@ plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
@@ -890,34 +968,45 @@ tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
 text(-1, .96, "(d)")
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP2", "TCGA"] <- tmp
+dev.off()
+
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccpPAM_hclust_TCGA_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(d) ", mmain))
+  dev.off()
 }
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("TCGA", "CCP2", tmp, NA)
 ```
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_TCGA2015_PAM/consensus008.png"></td>
-<td><img src="./SD20200427_TCGA2015_PAM/consensus009.png"></td>
+<td><img src="./SE20201003_TCGA2015_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_TCGA2015_PAM/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_TCGA2015_PAM/consensus005.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_TCGA_consensus.png"></td>
+<td><img src="./SE20201003_TCGA2015_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_TCGA_consensus.png"></td>
 </tr>
 </tbody>
 </table>
 
 
+
 # FPKM: Top 2500 features
 ```{r}
-exprData <- get_FPKM(ddata, feature_annotation$GeneLength)
-exprData <- log2(1 + exprData)
+system.time({
+  exprData <- get_FPKM(ddata, feature_annotation$GeneLength)
+  exprData <- log2(1 + exprData)
+})
+#   user  system elapsed 
+#  0.134   0.000   0.134 
+timing <- c(0.134, 0.000, 0.134)
 tmp <- apply(exprData, 2, var)
 tmp <- names(tail(sort(tmp), 2500))
 exprData <-  scale(exprData[, tmp])
@@ -928,10 +1017,10 @@ aCalinski <- calinski(hhc, gMax = 9)
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_FPKM25.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, 150, hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
@@ -939,12 +1028,14 @@ tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
 text(-1, .96, "(e)")
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["HC", "FPKM2500"] <- tmp
 if(save_png) png(file = paste0(jobName, "_FPKM25_silhouttes.png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-plot(ssil, main = mmain, col = clust.col)
+plot(ssil, main = paste0("(e) ", mmain), col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("FPKM (2,500HVG)", "HC", tmp, round(timing[3], 4))
 ```
 
 ## ConsensusClusterPlus (default parameters)
@@ -968,37 +1059,41 @@ aCalinski <- calinski(hhc, gMax = 7)
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_ccp_hclust_FPKM25.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
-tmp.col <- as.data.frame(tmp.col)
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP1", "FPKM2500"] <- tmp
-text(-1, .96, "(h)")
+dev.off()
 
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccp_hclust_FPKM25_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(e) ", mmain))
+  dev.off()
 }
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("FPKM (2,500HVG)", "CCP1", tmp, NA)
+
 ```
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_FPKM25/consensus008.png"></td>
-<td><img src="./SD20200427_FPKM25/consensus009.png"></td>
+<td><img src="./SE20201003_FPKM25/consensus008.png"></td>
+<td><img src="./SE20201003_FPKM25/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_FPKM25/consensus005.png"></td>
-<td><img src="./SD20200427_ccp_hclust_FPKM25_consensus.png"></td>
+<td><img src="./SE20201003_FPKM25/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_FPKM25_consensus.png"></td>
 <td></td>
 </tr>
 </tbody>
@@ -1023,53 +1118,58 @@ if(!file.exists(paste0(jobName, "_ccpPAM_hclust_FPKM25.RData"))) {
 
 mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
 aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_FPKM25.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP2", "FPKM2500"] <- tmp
-text(-1, .96, "(h)")
+dev.off()
 
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccpPAM_hclust_FPKM25_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(e) ", mmain))
+  dev.off()
 }
-```
 
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("FPKM (2,500HVG)", "CCP2", tmp, NA)
+```
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_FPKM25_PAM/consensus008.png"></td>
-<td><img src="./SD20200427_FPKM25_PAM/consensus009.png"></td>
+<td><img src="./SE20201003_FPKM25_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_FPKM25_PAM/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_FPKM25_PAM/consensus005.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_FPKM25_consensus.png"></td>
+<td><img src="./SE20201003_FPKM25_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_FPKM25_consensus.png"></td>
 <td></td>
 </tr>
 </tbody>
 </table>
 
+
+
 # FPKM: Top 5000 features
 ```{r}
 exprData <- get_FPKM(ddata, feature_annotation$GeneLength)
 exprData <- log2(1 + exprData)
-tmp <- apply(exprData, 2, var)
-tmp <- names(tail(sort(tmp), 5000))
-exprData <-  scale(exprData[, tmp])
+HVG <- apply(exprData, 2, var)
+HVG <- names(tail(sort(HVG), 5000))
+exprData <-  scale(exprData[, HVG])
 ###
 mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
 hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
@@ -1080,7 +1180,7 @@ plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
@@ -1088,12 +1188,14 @@ tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
 text(-1, .96, "(f)")
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["HC", "FPKM5K"] <- tmp
 if(save_png) png(file = paste0(jobName, "_FPKM5k_silhouttes.png"), width = png_width, height = png_height)
 ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
-plot(ssil, main = mmain, col = clust.col)
+plot(ssil, main = paste0("(f) ", mmain), col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("FPKM (5,000HVG)", "HC", tmp, NA)
 ```
 
 
@@ -1121,34 +1223,37 @@ plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
 add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP1", "FPKM5K"] <- tmp
-text(-1, .96, "(h)")
+dev.off()
 
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccp_hclust_FPKM5k_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
-plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(f) ", mmain))
+  dev.off()
 }
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("FPKM (5,000HVG)", "CCP1", tmp, NA)
 ```
 
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_FPKM5k/consensus008.png"></td>
-<td><img src="./SD20200427_FPKM5k/consensus009.png"></td>
+<td><img src="./SE20201003_FPKM5k/consensus008.png"></td>
+<td><img src="./SE20201003_FPKM5k/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_FPKM5k/consensus005.png"></td>
-<td><img src="./SD20200427_ccp_hclust_FPKM5k_consensus.png"></td>
+<td><img src="./SE20201003_FPKM5k/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_FPKM5k_consensus.png"></td>
 <td></td>
 </tr>
 </tbody>
@@ -1177,23 +1282,796 @@ aCalinski <- calinski(hhc, gMax = 7)
 hhc$height <- hhc$height/max(hhc$height)
 if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_FPKM5k.png"), width = png_width, height = png_height, res = png_res)
 plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
-#add_Calinski_curve(from = 25, to = 120)
+add_Calinski_curve(from = 25, to = 120)
 wwhere <- 5
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
-abline(h = hh, col = "red")
+segments(1, hh, nrow(exprData), hh, col = "red")
 clustering <- as.factor(cutree(hhc, k = wwhere))
 names(clustering) <- hhc$labels
 levels(clustering) <- thisPalette
 tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
 colnames(tmp.col) <- c("clust", "sample")
 colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
-tmp.col <- as.data.frame(tmp.col)
-message("adjusted-Rand index (clues): ", tmp <- round(adjustedRand(as.numeric(tmp.col$clust), as.numeric(tmp.col$sample))[2], 4))
-ARIvalues["CCP2", "FPKM5K"] <- tmp
-text(-1, .96, "(h)")
+dev.off()
 
 if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
   png(file = paste0(jobName, "_ccpPAM_hclust_FPKM5k_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(f) ", mmain))
+  dev.off()
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("FPKM (5,000HVG)", "CCP2", tmp, NA)
+```
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_FPKM5k_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_FPKM5k_PAM/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_FPKM5k_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_FPKM5k_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+# VST (DESeq2): all features
+```{r}
+if(!file.exists(paste0(jobName, "_vst.RData"))) {
+  library(DESeq2)
+  system.time({exprData <- t(vst(ddata))})
+#   user    system  elapsed 
+#  3.002   0.068   3.068 
+  timing <- c(3.002, 0.068, 3.068)
+  save(exprData, timing, file = paste0(jobName, "_vst.RData"))
+} else load(paste0(jobName, "_vst.RData"))
+
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 9)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_vst.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+text(-1, .96, "(h)")
+if(save_png) png(file = paste0(jobName, "_vst_silhouttes.png"), width = png_width, height = png_height)
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+plot(ssil, main = paste0("(h) ", mmain), col = clust.col)
+dev.off()
+
+asw <- mean(ssil[, 3])
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("VST", "HC", tmp, round(timing[3], 4))
+```
+
+
+## ConsensusClusterPlus (default parameters)
+Result of ConsensuClusterPlus with default setup <br/>(innerLinkage="average", finalLinkage="average", distance="pearson")
+```{r VSTccp}
+if(!file.exists(paste0(jobName, "_ccp_hclust_vst.RData"))) {
+#Consensus clustering was performed using ConsensusClusterPlus (Wilkerson and Hayes, 2010) #(1000 iterations, resample rate of 80%, and Pearson correlation)
+  require(ConsensusClusterPlus)
+  set.seed(20200427)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson",
+                              title = paste0(jobName, "_VST"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp_hclust_vst.RData"))
+  } else load(paste0(jobName, "_ccp_hclust_vst.RData"))
+###
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
+hhc$height <- hhc$height/max(hhc$height)
+#if(save_png) png(file = paste0(jobName, "_ccp_hclust_vst.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+#dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("VST", "CCP1", tmp, NA)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccp_hclust_vst_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(h) ", mmain))
+  dev.off()
+}
+```
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_VST/consensus008.png"></td>
+<td><img src="./SE20201003_VST/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_VST/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_vst_consensus.png"></td>
+</tr>
+</tbody>
+</table>
+
+
+## ConsensusClusterPlus (PAM)
+Result of ConsensuClusterPlus with clusterAlg = "pam" and distance = "euclidean" (other parameters left to default)
+```{r VSTccp_PAM}
+if(!file.exists(paste0(jobName, "_ccpPAM_hclust_VST.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200413)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
+                              clusterAlg = "pam", distance = "euclidean",
+                              title = paste0(jobName, "_VST_PAM"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_VST.RData"))
+  } else load(paste0(jobName, "_ccpPAM_hclust_VST.RData"))
+
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_VST.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccpPAM_hclust_vst_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(h) ", mmain))
+  dev.off()
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("VST", "CCP2", tmp, NA)
+```
+
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_VST_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_VST_PAM/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_VST_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_vst_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+# rLog (DESeq2): all features
+```{r}
+if(!file.exists(paste0(jobName, "_rld.RData"))) {
+  require(DESeq2)
+  dds <- DESeqDataSetFromMatrix(countData = ddata, 
+                                colData = annotation.df, 
+                                rowData = feature_annotation, 
+                                design = ~1)
+  system.time({rld <- rlog(dds, blind=FALSE)})
+  #    user   system  elapsed 
+  # 927.281    0.464  927.896 
+  timing <- c(927.281, 0.464, 927.896)
+  
+  exprData <- t(assay(rld))
+  save(exprData, timing, file = paste0(jobName, "_rld.RData"))
+} else load(paste0(jobName, "_rld.RData"))
+###
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 9)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_rlog.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+text(-1, .96, "(g)")
+if(save_png) png(file = paste0(jobName, "_rlog_silhouttes.png"), width = png_width, height = png_height)
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+plot(ssil, main = paste0("(g) ", mmain), col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("rLog", "HC", tmp, round(timing[3], 4))
+```
+
+
+## ConsensusClusterPlus (default parameters)
+Result of ConsensuClusterPlus with default setup <br/>(innerLinkage="average", finalLinkage="average", distance="pearson")
+```{r rlog ccp}
+if(!file.exists(paste0(jobName, "_ccp_hclust_rlog.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200427)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson",
+                              title = paste0(jobName, "_rlog"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp_hclust_rlog.RData"))
+  } else load(paste0(jobName, "_ccp_hclust_rlog.RData"))
+###
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccp_hclust_rlog.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("rLog", "CCP1", tmp, NA)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccp_hclust_rlog_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(g) ", mmain))
+  dev.off()
+}
+```
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_rlog/consensus008.png"></td>
+<td><img src="./SE20201003_rlog/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_rlog/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_rlog_consensus.png"></td>
+</tr>
+</tbody>
+</table>
+
+
+## ConsensusClusterPlus (PAM)
+Result of ConsensuClusterPlus with clusterAlg = "pam" and distance = "euclidean" (other parameters left to default)
+```{r rlog ccp_PAM}
+if(!file.exists(paste0(jobName, "_ccpPAM_hclust_rlog.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200413)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
+                              clusterAlg = "pam", distance = "euclidean",
+                              title = paste0(jobName, "_rlog_PAM"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_rlog.RData"))
+  } else load(paste0(jobName, "_ccpPAM_hclust_rlog.RData"))
+
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_rlog.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccpPAM_hclust_rlog_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(g) ", mmain))
+  dev.off()
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("rLog", "CCP2", tmp, NA)
+```
+
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_rlog_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_rlog_PAM/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_rlog_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_rlog_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+
+# rLog (DESeq2) 2,500 HVG
+```{r}
+HVG <- apply(exprData, 2, var)
+HVG <- names(tail(sort(HVG), 2500))
+exprData <-  exprData[, HVG]
+###
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 9)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_rlog2500.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+if(save_png) png(file = paste0(jobName, "_rlog2500_silhouttes.png"), width = png_width, height = png_height)
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+plot(ssil, main = mmain, col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("rLog (2,500HVG)", "HC", tmp, NA)
+```
+
+
+## ConsensusClusterPlus (default parameters)
+Result of ConsensuClusterPlus with default setup <br/>(innerLinkage="average", finalLinkage="average", distance="pearson")
+```{r rlog2500 ccp}
+if(!file.exists(paste0(jobName, "_ccp_hclust_rlog2500.RData"))) {
+#Consensus clustering was performed using ConsensusClusterPlus (Wilkerson and Hayes, 2010) #(1000 iterations, resample rate of 80%, and Pearson correlation)
+  require(ConsensusClusterPlus)
+  set.seed(20200427)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson",
+                              title = paste0(jobName, "_rlog2500"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp_hclust_rlog2500.RData"))
+  } else load(paste0(jobName, "_ccp_hclust_rlog2500.RData"))
+###
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccp_hclust_rlog2500.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+#text(-1, .96, "(d)")
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("rLog (2,500HVG)", "CCP1", tmp, NA)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccp_hclust_rlog2500_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  dev.off()
+}
+```
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_rlog2500/consensus008.png"></td>
+<td><img src="./SE20201003_rlog2500/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_rlog2500/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_rlog2500_consensus.png"></td>
+</tr>
+</tbody>
+</table>
+
+
+
+## ConsensusClusterPlus (PAM)
+Result of ConsensuClusterPlus with clusterAlg = "pam" and distance = "euclidean" (other parameters left to default)
+```{r rlog2500 ccp_PAM}
+if(!file.exists(paste0(jobName, "_ccpPAM_hclust_rlog2500.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200413)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
+                              clusterAlg = "pam", distance = "euclidean",
+                              title = paste0(jobName, "_rlog2500_PAM"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_rlog2500.RData"))
+  } else load(paste0(jobName, "_ccpPAM_hclust_rlog2500.RData"))
+
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_rlog2500.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccpPAM_hclust_rlog2500_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  dev.off()
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("rLog (2,500HVG)", "CCP2", tmp, NA)
+```
+
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_rlog2500_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_rlog2500_PAM/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_rlog2500_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_rlog2500_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+# Townes/deviance (scry)
+```{r Townes/scry deviance}
+if(!file.exists(paste0(jobName, "_scry.RData"))) {
+  library(scry)
+  system.time({exprData_deviance <- nullResiduals(ddata, type = "deviance")})
+#   user  system elapsed 
+#  0.216   0.000   0.216 
+  timing_dev <- c(0.216, 0.000, 0.216)
+  write.table(exprData_deviance, sep = "\t", quote = FALSE, file = "townes_exprData_deviance.tsv")
+  system.time({exprData_pearson <- nullResiduals(ddata, type = "pearson")})
+#  user  system elapsed 
+#  0.049   0.000   0.048 
+  timing_pears <- c(0.049, 0.000, 0.048)
+  write.table(exprData_pearson, sep = "\t", quote = FALSE, file = "townes_exprData_pearson.tsv")
+  
+#  exprData_deviance <- read.csv("townes_exprData_deviance.tsv", sep = "\t")
+#  exprData_deviance <- as.matrix(t(exprData_deviance))
+
+#  exprData_pearson <- read.csv("townes_exprData_pearson.tsv", sep = "\t")
+#  exprData_pearson <- as.matrix(t(exprData_pearson))
+  save(exprData_deviance, timing_dev, exprData_pearson, timing_pears, file = paste0(jobName, "_scry.RData"))
+} else load(paste0(jobName, "_scry.RData"))
+
+exprData <- t(na.omit(t(exprData_deviance)))
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 9)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_scry_dev.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+text(-1, .96, "(i)")
+dev.off()
+
+if(save_png) png(file = paste0(jobName, "_scry_dev_silhouttes.png"), width = png_width, height = png_height)
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+plot(ssil, main = paste0("(i) ", mmain), col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("Townes/deviance", "HC", tmp, round(timing_dev[3], 4))
+```
+
+
+## ConsensusClusterPlus (default parameters)
+Result of ConsensuClusterPlus with default setup <br/>(innerLinkage="average", finalLinkage="average", distance="pearson")
+```{r scry deviance ccp}
+if(!file.exists(paste0(jobName, "_ccp_hclust_scry_dev.RData"))) {
+#Consensus clustering was performed using ConsensusClusterPlus (Wilkerson and Hayes, 2010) #(1000 iterations, resample rate of 80%, and Pearson correlation)
+  require(ConsensusClusterPlus)
+  set.seed(20200427)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson", 
+                              title = paste0(jobName, "_scry_dev"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, 
+       file = paste0(jobName, "_ccp_hclust_scry_dev.RData"))
+  } else load(paste0(jobName, "_ccp_hclust_scry_dev.RData"))
+###
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccp_hclust_scry_dev.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/deviance", "CCP1", tmp, NA)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccp_hclust_scry_dev_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(i) ", mmain))
+dev.off()
+}
+```
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_scry_dev/consensus008.png"></td>
+<td><img src="./SE20201003_scry_dev/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_dev/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_scry_dev_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+
+## ConsensusClusterPlus (PAM)
+```{r scry deviance ccp_PAM}
+if(!file.exists(paste0(jobName, "_ccpPAM_hclust_scry_dev.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200413)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
+                              clusterAlg = "pam", distance = "euclidean",
+                              title = paste0(jobName, "_scry_dev_PAM"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_scry_dev.RData"))
+  } else load(paste0(jobName, "_ccpPAM_hclust_scry_dev.RData"))
+
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_scry_dev.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccpPAM_hclust_scry_dev_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(i) ", mmain))
+  dev.off()
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/deviance", "CCP2", tmp, NA)
+```
+
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_scry_dev_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_scry_dev_PAM/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_dev_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_dev_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+# Townes/deviance (scry) 2,500HVG
+```{r Townes/scry deviance 2,500HVG}
+load(paste0(jobName, "_scry.RData"))
+exprData <- t(na.omit(t(exprData_deviance)))
+HVG <- apply(exprData, 2, var)
+HVG <- names(tail(sort(HVG), 2500))
+exprData <-  exprData[, HVG]
+
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 9)
+hhc$height <- hhc$height/max(hhc$height)
+#if(save_png) png(file = paste0(jobName, "_scry_dev.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+
+#if(save_png) png(file = paste0(jobName, "_scry_dev_silhouttes.png"), width = png_width, height = png_height)
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+plot(ssil, main = mmain, col = clust.col)
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("Townes/deviance (2,500HVG)", "HC", tmp, NA)
+```
+
+
+## ConsensusClusterPlus (default parameters)
+Result of ConsensuClusterPlus with default setup <br/>(innerLinkage="average", finalLinkage="average", distance="pearson")
+```{r scry deviance ccp 2,500HVG}
+if(!file.exists(paste0(jobName, "_ccp_hclust_scry_dev_2k5HVG.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200427)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson", 
+                              title = paste0(jobName, "_scry_dev_2k5HVG"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp_hclust_scry_dev_2k5HVG.RData"))
+  } else load(paste0(jobName, "_ccp_hclust_scry_dev_2k5HVG.RData"))
+###
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+if(Inf %in% aCalinski) aCalinski <- aCalinski[!is.infinite(aCalinski)]
+hhc$height <- hhc$height/max(hhc$height)
+#if(save_png) png(file = paste0(jobName, "_ccp_hclust_scry_dev_2k5HVG.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/deviance (2,500HVG)", "CCP1", tmp, NA)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccp_hclust_scry_dev_2k5HVG_consensus.png"), 
       width = png_width, height = png_width, res = png_res)
 plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
 }
@@ -1202,25 +2080,443 @@ plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thi
 <table>
 <tbody>
 <tr>
-<td><img src="./SD20200427_FPKM5k_PAM/consensus008.png"></td>
-<td><img src="./SD20200427_FPKM5k_PAM/consensus009.png"></td>
+<td><img src="./SE20201003_scry_dev_2k5HVG/consensus008.png"></td>
+<td><img src="./SE20201003_scry_dev_2k5HVG/consensus009.png"></td>
 </tr>
 <tr>
-<td><img src="./SD20200427_FPKM5k_PAM/consensus005.png"></td>
-<td><img src="./SD20200427_ccpPAM_hclust_FPKM5k_consensus.png"></td>
+<td><img src="./SE20201003_scry_dev_2k5HVG/consensus005.png"></td>
+<td><img src="./SE20201003_ccp_hclust_scry_dev_2k5HVG_consensus.png"></td>
 <td></td>
 </tr>
 </tbody>
 </table>
 
 
-# Adjusted Rand indeces
+
+## ConsensusClusterPlus (PAM)
+```{r scry deviance ccp_PAM 2,500HVG}
+if(!file.exists(paste0(jobName, "_ccpPAM_hclust_scry_dev_2k5HVG.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200413)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
+                              clusterAlg = "pam", distance = "euclidean",
+                              title = paste0(jobName, "_scry_dev_PAM_2k5HVG"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_scry_dev_2k5HVG.RData"))
+  } else load(paste0(jobName, "_ccpPAM_hclust_scry_dev_2k5HVG.RData"))
+
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+#if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_scry_dev_2k5HVG.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccpPAM_hclust_scry_dev_2k5HVG_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/deviance (2,500HVG)", "CCP2", tmp, NA)
+```
+
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_scry_dev_PAM_2k5HVG/consensus008.png"></td>
+<td><img src="./SE20201003_scry_dev_PAM_2k5HVG/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_dev_PAM_2k5HVG/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_dev_2k5HVG_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+
+# Townes/pearson (scry)
+```{r Townes/scry pearson}
+exprData <-  t(na.omit(t(exprData_pearson)))
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 9)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_scry_pears.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+text(-1, .96, "(l)")
+if(save_png) png(file = paste0(jobName, "_scry_pears_silhouttes.png"), width = png_width, height = png_height)
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+plot(ssil, main = paste0("(l) ", mmain), col = clust.col)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("Townes/pearson", "HC", tmp, round(timing_pears[3], 4))
+```
+
+
+
+## ConsensusClusterPlus (default parameters)
+Result of ConsensuClusterPlus with default setup <br/>(innerLinkage="average", finalLinkage="average", distance="pearson")
+```{r scry pearson ccp}
+if(!file.exists(paste0(jobName, "_ccp_hclust_scry_pears.RData"))) {
+#Consensus clustering was performed using ConsensusClusterPlus (Wilkerson and Hayes, 2010) #(1000 iterations, resample rate of 80%, and Pearson correlation)
+  require(ConsensusClusterPlus)
+  set.seed(20200427)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson", 
+                              title = paste0(jobName, "_scry_pears"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp_hclust_scry_pears.RData"))
+  } else load(paste0(jobName, "_ccp_hclust_scry_pears.RData"))
+###
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccp_hclust_scry_pears.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/pearson", "CCP1", tmp, NA)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccp_hclust_scry_pears_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(l) ", mmain))
+  dev.off()
+}
+```
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_scry_pears/consensus008.png"></td>
+<td><img src="./SE20201003_scry_pears/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_pears/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_pears_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+## ConsensusClusterPlus (PAM)
+```{r scry pearson ccp_PAM}
+if(!file.exists(paste0(jobName, "_ccpPAM_hclust_scry_pears.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200413)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
+                              clusterAlg = "pam", distance = "euclidean",
+                              title = paste0(jobName, "_scry_pears_PAM"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_scry_pears.RData"))
+  } else load(paste0(jobName, "_ccpPAM_hclust_scry_pears.RData"))
+
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_scry_pears.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccpPAM_hclust_scry_pears_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, 
+       clusterColors = thisPalette, main = paste0("(l) ", mmain))
+  dev.off()
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/perason", "CCP2", tmp, NA)
+```
+
+
+
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_scry_pears_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_scry_pears_PAM/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_pears_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_pears_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+# Townes/pearson (scry) 2,500HVG
+```{r Townes/scry pearson 2k5HVG}
+exprData <-  t(na.omit(t(exprData_pearson)))
+HVG <- apply(exprData, 2, var)
+HVG <- names(tail(sort(HVG), 2500))
+exprData <-  exprData[, HVG]
+mmain <- paste0(nrow(exprData), " samples/", ncol(exprData), " genes")
+hhc <- hclust(ddist <- dist(exprData), method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 9)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_scry_pears_2k5HVG.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+#text(-1, .96, "(h)")
+if(save_png) png(file = paste0(jobName, "_scry_pears_2k5HVG_silhouttes.png"), width = png_width, height = png_height)
+ssil <- silhouette(as.numeric(annotation.df$sample.col), ddist)
+plot(ssil, main = mmain, col = clust.col)
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], round(mean(ssil[,3]), 4))
+results[k <- k+1,] <- c("Townes/pearson (2,500HVG)", "HC", tmp, NA)
+```
+
+
+
+## ConsensusClusterPlus (default parameters)
+Result of ConsensuClusterPlus with default setup <br/>(innerLinkage="average", finalLinkage="average", distance="pearson")
+```{r scry pearson ccp 2k5HVG}
+if(!file.exists(paste0(jobName, "_ccp_hclust_scry_pears_2k5HVG.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200427)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, distance = "pearson", 
+                              title = paste0(jobName, "_scry_pears_2k5HVG"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccp_hclust_scry_pears_2k5HVG.RData"))
+  } else load(paste0(jobName, "_ccp_hclust_scry_pears_2k5HVG.RData"))
+###
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccp_hclust_scry_pears_2k5HVG.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/pearson (2,500HVG)", "CCP1", tmp, NA)
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccp_hclust_scry_pears_2k5HVG_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  dev.off()
+}
+```
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_scry_pears_2k5HVG/consensus008.png"></td>
+<td><img src="./SE20201003_scry_pears_2k5HVG/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_pears_2k5HVG/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_pears_2k5HVG_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+## ConsensusClusterPlus (PAM)
+```{r scry pearson ccp_PAM_2k5HVG}
+if(!file.exists(paste0(jobName, "_ccpPAM_hclust_scry_pears_2k5HVG.RData"))) {
+  require(ConsensusClusterPlus)
+  set.seed(20200413)
+  ans <- ConsensusClusterPlus(t(exprData), maxK = 7, reps = 1000, 
+                              clusterAlg = "pam", distance = "euclidean",
+                              title = paste0(jobName, "_scry_pears_2k5HVG_PAM"), plot = "png")
+  ncol_exprData <- ncol(exprData)
+  nrow_exprData <- nrow(exprData)
+  ccp <- ans[[5]]
+  class(ccp) <- "ConsensusClusterPlus"
+  hhc <- ccp$consensusTree
+  save(hhc, ccp, nrow_exprData, ncol_exprData, jobName, file = paste0(jobName, "_ccpPAM_hclust_scry_pears_2k5HVG.RData"))
+  } else load(paste0(jobName, "_ccpPAM_hclust_scry_pears_2k5HVG.RData"))
+
+mmain <- paste0(nrow_exprData, " samples/", ncol_exprData, " genes")
+aCalinski <- calinski(hhc, gMax = 7)
+hhc$height <- hhc$height/max(hhc$height)
+if(save_png) png(file = paste0(jobName, "_ccpPAM_hclust_scry_pears_2k5HVG.png"), width = png_width, height = png_height, res = png_res)
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+add_Calinski_curve(from = 25, to = 120)
+wwhere <- 5
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow(exprData), hh, col = "red")
+clustering <- as.factor(cutree(hhc, k = wwhere))
+names(clustering) <- hhc$labels
+levels(clustering) <- thisPalette
+tmp.col <- cbind(as.character(clustering), as.character(annotation.df$sample.col))
+colnames(tmp.col) <- c("clust", "sample")
+colored_bars(colors = tmp.col, dend = as.dendrogram(hhc), y_scale = y_scale_, y_shift = y_shift_)
+dev.off()
+
+if(save_png & ("plot.ConsensusClusterPlus" %in% ls())) {
+  png(file = paste0(jobName, "_ccpPAM_hclust_scry_pears_2k5HVG_consensus.png"), 
+      width = png_width, height = png_width, res = png_res)
+  plot(ccp, rep = 1000, clustering = annotation.df$sample.col, clusterColors = thisPalette)
+  dev.off()
+}
+
+tmp.col <- as.data.frame(tmp.col)
+tmp <- c(get_metrics(tmp.col$sample, tmp.col$clust)[1:4], NA)
+results[k <- k+1,] <- c("Townes/pearson (2,500HVG)", "CCP2", tmp, NA)
+```
+
+
+
+
+<table>
+<tbody>
+<tr>
+<td><img src="./SE20201003_scry_pears_2k5HVG_PAM/consensus008.png"></td>
+<td><img src="./SE20201003_scry_pears_2k5HVG_PAM/consensus009.png"></td>
+</tr>
+<tr>
+<td><img src="./SE20201003_scry_pears_2k5HVG_PAM/consensus005.png"></td>
+<td><img src="./SE20201003_ccpPAM_hclust_scry_pears_2k5HVG_consensus.png"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+
+# Table of the experiments
 ```{r}
-kable(ARIvalues)
+results <- as.data.frame(results)
+results <- results[!is.na(results$ARI),]
+kable(results)
+
+write.table(results, file = paste0(jobName, "_results.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 ```
 
 HC) hirerachical clustering with Ward's likage and Euclidean distance; CPP1) ConsensusClusterPlus with average innner and outer linkage, and Pearson's correlation as distance; CCP2) ConsensusClusterPlus with PAM and Euclidean distance;
 
+
+```{r supp table 1, eval = FALSE}
+ttable <- read.csv(paste0(jobName, "_results.tsv"), sep = "\t")[, -8]
+library(xtable)
+x.table <- xtable(ttable)
+print(xtable(ttable), include.rownames = FALSE)
+```
+
+
+```{r supp table 2, eval = FALSE}
+ttable <- read.csv(paste0(jobName, "_results.tsv"), sep = "\t")
+ttable <- ttable[!is.na(ttable$timing), -(2:7)]
+ttable$ratio <- round(ttable$timing/ttable$timing[1], 3)
+kable(ttable)
+library(xtable)
+x.table <- xtable(ttable)
+print(xtable(ttable), include.rownames = FALSE)
+
+
+```
+
+
+
+
+# Average Silhouettes Width
+
+```{r Average_Silhouettes_Width.png}
+ttable <- read.csv(paste0(jobName, "_results.tsv"), sep = "\t")
+ttable <- ttable[!is.na(ttable$ASW),]
+
+if(save_png) png(file = paste0(jobName, "_Average_Silhouettes_Width.png"), width = png_width, height = 350, res = png_res)
+bp <- barplot(ttable$ASW, ylab = "Average Silhouettes Width", border = NA, col = "gray80")
+what <- as.character(ttable$what)
+text(bp-0.25, 0.01, what, srt = 90, pos = 4, cex = 1.1)
+dev.off()
+knit_exit()
+```
 
 
 # Session info
@@ -1229,4 +2525,45 @@ HC) hirerachical clustering with Ward's likage and Euclidean distance; CPP1) Con
 sessionInfo()
 knit_exit()
 ```
+
+```{r}
+rm(list = ls())
+setwd("~/Dropbox/AWST/gitHub/SD20200413/")
+ttable <- read.csv("SE20201003_results.tsv", sep = "\t")
+HC <- ttable$G[grep("HC", ttable$with)]
+names(HC)<- ttable$what[grep("HC", ttable$with)]
+CCP1 <- ttable$G[grep("CCP1", ttable$with)]
+names(CCP1)<- ttable$what[grep("CCP1", ttable$with)]
+CCP2 <- ttable$G[grep("CCP2", ttable$with)]
+names(CCP2)<- ttable$what[grep("CCP2", ttable$with)]
+
+ppalette <- c("red", "green3", "blue", "cyan2", "magenta", "gold")
+xx <- c(rep(1, length(HC)), rep(2, length(CCP1)), rep(3, length(CCP2)))
+yy <- c(HC, CCP1, CCP2)
+ccol <- rep(ppalette, 3)
+plot(xx, yy, ylim = c(0, 1), col = ccol, pch = 19, xlab = NA, ylab = "performance", bty = "n", xaxt = "n")
+segments(rep(1, length(HC)), HC, rep(2, length(HC)), CCP1, col = ppalette)
+segments(rep(2, length(HC)), CCP1, rep(3, length(HC)), CCP2, col = ppalette)
+text(c(1, 2, 3), c(0, 0, 0), c("HC", "CCP1", "CCP2"))
+text(rep(1, length(HC)), HC, names(HC))
+```
+
+```{r}
+rm(list = ls())
+setwd("~/Dropbox/AWST/gitHub/SD20200413/")
+ttable <- read.csv("SE20201003_results.tsv", sep = "\t")
+ttable <- ttable[!is.na(ttable$ASW),]
+png(file = paste0(jobName, "Average_Silhouettes_Width.png"), 
+      width = png_width, height = png_height, res = png_res)
+bp <- barplot(ttable$ASW, ylab = "Average Silhouettes Width", border = NA, col = "#A6CEE3")
+what <- as.character(ttable$what)
+what <- c("AWST", "Hart", "Radovich (1,000 features)", "TCGA (1,500 features)", "FPKM (2,500 features)", "FPKM (5,000 features)", "VST", "rlog (2,500 features)", "rlog", "Townes/deviance", "Townes/pearson") 
+text(bp, 0.01, what, srt = 90, pos = 4, cex = 1.1)
+dev.off()
+
+
+thisPalette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99") # from ConsensusClusterPlus
+```
+
+
 
