@@ -1,0 +1,172 @@
+---
+title: "Code to reproduce the analyses of the AWST paper: Analysis of the LGG data<br/> Figure 17 and 18."
+author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
+date:  'compiled on `r format(Sys.time(), "%B %d, %Y")`'
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 7
+    toc: yes
+    toc_float: yes
+    df_print: paged
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r knitr setup, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.align = "center") 
+```
+
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2020). Per-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+
+This file belongs to the repository: https://github.com/drisso/awst_analysis.
+
+The code is released with license GPL v3.0.
+
+In this script we analyze LGG data normalized with Variance-Stabilizing Transformation (VST) from Anders and Huber (2010).
+
+
+```{r setup, message=FALSE}
+rm(list = ls()) 
+setwd("~/Dropbox/AWST/gitHub/lgg20200906_VST/")
+jobName <- "LGG20200906"
+library(awst)
+library(EDASeq)
+library(scales)
+library(survival)
+library(survminer)
+library(GGally)
+library(heatmap3)
+library(dendextend)
+library(knitr)
+###
+annotation.df <- read.table("https://raw.githubusercontent.com/drisso/awst_analysis/master/LowerGradeGliomaExperiment/LGG_annotation.tsv", sep = "\t", row.names = 1) #20200316
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col) )
+###
+save_plots <- FALSE
+png_width_large <- 1500
+png_height_large <- 750
+png_width_small <- 700
+png_height_small <- 400
+png_res <- 1/300
+
+source("https://raw.githubusercontent.com/drisso/awst_analysis/master/functions.R") #20200316
+load("Legacy_TCGA_LGG_Level3.RData")  
+
+features_with_those_selected_by_AWST.df <- read.table("../lgg20200316_AWST/features_with_those_selected.tsv", header = TRUE, row.names = 4)
+
+AWST_clustering.df <- read.table("../lgg20200316_AWST/AWST_clustering.tsv", header = TRUE, row.names = 2)
+```
+
+
+```{r vstData, echo=TRUE, include=FALSE, eval=TRUE}
+require(DESeq2)
+dds <- DESeqDataSetFromMatrix(countData = ddata, 
+                              colData = annotation.df, 
+                              design = ~1)
+vvst <- vst(dds, blind=FALSE)
+wData <- t(assay(vvst))
+```
+
+\newpage
+# clustering with 2500 HVG
+```{r HVG2500}
+what <- "HVG2500"
+tmp <- apply(wData, 2, var)
+tmp <- HVG2500 <- names(tail(sort(tmp), 2500))
+exprData <-  wData[, tmp]
+no_of_partitions <- c(4, 12)
+```
+```{r _plot_hclust_main.png, fig.width=30, fig.height=15, echo=FALSE}
+nrow_exprData <- nrow(exprData)
+ncol_exprData <- ncol(exprData)
+ddist <- dist(exprData)
+hhc <- hclust(ddist, method = "ward.D2")
+aCalinski <- calinski(hhc, gMax = 20)
+annotation.col <- annotation.col[hhc$labels,]
+hhc$height <- hhc$height/max(hhc$height)
+
+mmain  <-  paste0(jobName, " (", nrow_exprData, " samples/", ncol_exprData, " genes)")
+if(save_plots & (what %in% c("HVG10212", "AWST10212"))) {
+  mmain <- ""
+  png(paste0(jobName, "_plot_hclust_VST_", what, ".png"), width= png_width_large, height= png_height_large, res = png_res)
+  }
+plot(hhc, hang = -1, labels = FALSE, xlab = "euclidean/ward", sub = "", main = mmain)
+
+add_Calinski_curve(height = 0.5, from = 1, to = 400)
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.1, y_shift = -0.1)
+
+tmp <- apply(tt <- table(annotation.df$exprClust.NEJM, annotation.df$exprClust.NEJM.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(1, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/NEJM", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$exprClust.CELL, annotation.df$exprClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(60, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "exprClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$methClust.CELL, annotation.df$methClust.CELL.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(110, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "methClust/CELL", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$CODEL.subtype, annotation.df$CODEL.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(160, 0.95, legend = gsub("kamoun_", "", rownames(tt)), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "CODEL subtype", title.adj = 0)
+#
+tmp <- apply(tt <- table(annotation.df$original.subtype, annotation.df$original.subtype.col), 1, which.max)
+ffill <- colnames(tt)[tmp]
+legend(210, 0.95, legend = rownames(tt), fill = ffill, 
+       border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+```
+
+\newpage
+# clustering with 5000 HVG
+```{r HVG5000}
+what <- "HVG5000"
+tmp <- apply(wData, 2, var)
+tmp <- HVG5000 <- names(tail(sort(tmp), 5000))
+exprData <-  wData[, tmp]
+```
+```{r, ref.label="_plot_hclust_main.png", fig.width=30, fig.height=15, echo=FALSE}
+```
+
+\newpage
+# clustering with 10212 HVG (same number of AWST protocol)
+```{r HVG10212}
+what <- "HVG10212"
+tmp <- apply(wData, 2, var)
+tmp <- HVG10212 <- names(tail(sort(tmp), sum(features_with_those_selected_by_AWST.df$included)))
+exprData <-  wData[, tmp]
+```
+```{r, ref.label="_plot_hclust_main.png", fig.width=30, fig.height=15, echo=FALSE}
+```
+
+\newpage
+# clustering with 10212 features selected with the AWST protocol
+```{r AWST}
+what <- "AWST10212"
+tmp <- which(features_with_those_selected_by_AWST.df$included)
+tmp <- AWST10212 <- rownames(features_with_those_selected_by_AWST.df)[tmp]
+exprData <-  wData[, tmp]
+```
+```{r, ref.label="_plot_hclust_main.png", fig.width=30, fig.height=15, echo=FALSE}
+```
+\newpage
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
+
+```{r}
+knit_exit()
+```
+
