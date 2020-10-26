@@ -1,5 +1,5 @@
 ---
-title: "Code to reproduce the analyses of the AWST paper: Analysis of the CBMC data"
+title: "Code to reproduce the analyses of the AWST paper: Analysis of the CBMC data<br/> Figure 6,<br/> Supplementary Figures from 21 to 26.<br/>Updated after review."
 author: "[S.M.Pagnotta](https://www.researchgate.net/profile/Stefano_Pagnotta) - Dept. of Science and Technology, Universita' degli Studi del Sannio (Benevento, Italy)</br> [D.Risso](https://www.researchgate.net/profile/Davide_Risso) - Dept. of Statistical Sciences, Universita' degli Studi di Padova (Padova, Italy)"
 date:  '`r format(Sys.time(), "%d %B, %Y")`'
 output: 
@@ -16,7 +16,7 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, fig.height = 4.5, fig.width =  11, fig.align = "center")
 ```
 
-Here we show the code to reproduce the analyses of: Risso and Pagnotta (2020). Per-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. In preparation.
+Here we show the code to reproduce the analyses of: Risso and Pagnotta (2020). Per-sample standardization and asymmetric winsorization lead to accurate classification of RNA-seq expression profiles. 
 
 This file belongs to the repository: https://github.com/drisso/awst_analysis.
 
@@ -39,8 +39,8 @@ library(EDASeq)
 library(Rtsne)
 library(umap)
 library(dendextend)
-setwd("~/Dropbox/AWST/gitHub/cbmc20200131") # 20200318
-jobName <- "CBMC20200318"
+setwd("~/Dropbox/AWST/CITE20201018/") 
+jobName <- "CBMC20201018"
 ```
 
 # Data import and cleaning
@@ -190,6 +190,16 @@ color.bar2 <- function(x_pos, y_pos, lut, min, max=-min, nticks=11, ticks=seq(mi
     	text(x_pos+.05, (y_low + y_high)/2, values[i], adj = -0.1)
     }	
 }
+
+color.bar3 <- function(x_pos, y_pos, lut, min, max=-min, nticks=11, ticks=seq(min, max, len=nticks), title='', values = NULL) {
+    scale = (max-min)/length(lut)*0.3
+    for (i in 1:length(lut)) {
+      y_low  <- (i-1)*scale + y_pos
+    	y_high <-  y_low + scale
+    	rect(x_pos,y_low,x_pos+90,y_high, col=lut[i], border=NA)
+    	text(x_pos+.05, (y_low + y_high)/2, values[i], adj = -2)
+    }	
+}
 vvalues <- c("-3.0", "-2.0", "-1.3", "-0.6", " 0.0", " 0.6", " 1.3", " 2.0", " 3.0")
 ffill2 <- names(table(annotation.df$CD3.col))
 ```
@@ -203,9 +213,9 @@ rownames(clustering.df) <- clustering.df$cell
 #clustering.df <- clustering.df[hhc$labels,]
 ############
 #load(paste0(jobName, "_dist_hclust.RData"))
-mmain  <-  paste0("CBMC study (", nrow_exprData, " cells/", ncol_exprData, " genes)")
+mmain  <-  paste0("(a) - CBMC study (", nrow_exprData, " cells/", ncol_exprData, " genes)")
 if(save_plots) {
-  mmain <- ""
+#  mmain <- ""
   png(paste0(jobName, "_expression_dist_hclust.png"), 
       width= png_width_large, height= png_height_large, res = png_res)
 }
@@ -217,8 +227,6 @@ wwhere <- 6
 hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
 abline(h = hh, col = "red")
 tmp <- tmp_ <- as.factor(cutree(hhc, k = wwhere))
-#table(tmp)
-#levels(tmp) <- c( "1", "1", "3", "4", "5", "6", "6", "8","4", "5")
 wwhere <- length(unique(levels(tmp)))
 clusteringWhere <- paste0(clustering.prefix, wwhere)
 clusteringWhere.col <- paste0(clusteringWhere, ".col")
@@ -226,7 +234,6 @@ assign(clusteringWhere.col, tmp)
 levels(tmp) <- paste0(short.prefix, wwhere, 1:wwhere)
 assign(clusteringWhere, tmp)
 levels(tmp) <- palette()[1:wwhere]
-#table(tmp_, tmp)
 assign(clusteringWhere.col, tmp)
 tt <- table(get(clusteringWhere), get(clusteringWhere.col))
 colorCode <- colnames(tt)[apply(tt, 1, which.max)]
@@ -251,25 +258,14 @@ save(clustering.df, clust.colorCode, file = "clustering.RData")
 
 tt <- table(clustering.df[, ncol(clustering.df)-1])
 pct <- paste0(round(100*tt/sum(tt), 1), "%")
-llegend <- paste(names(tt), " (", tt, "; ", pct, ")", sep = "")
+llegend <- AWST_legend <- paste(names(tt), " (", tt, "; ", pct, ")", sep = "")
 tt <- table(clustering.df[, ncol(clustering.df)-1], clustering.df[, ncol(clustering.df)])
-ffill <- colnames(tt)[apply(tt, 1, which.max)]
+ffill <- AWST_fill <- colnames(tt)[apply(tt, 1, which.max)]
 legend(1, .85, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
 
-color.bar3 <- function(x_pos, y_pos, lut, min, max=-min, nticks=11, ticks=seq(min, max, len=nticks), title='', values = NULL) {
-    scale = (max-min)/length(lut)*0.3
-#    plot(c(0,10), c(min,max), type='n', bty='n', xaxt='n', xlab='', yaxt='n', ylab='', main=title, add = TRUE)
-    #axis(2, ticks, las=1)
-    for (i in 1:length(lut)) {
-      y_low  <- (i-1)*scale + y_pos
-    	y_high <-  y_low + scale
-    	rect(x_pos,y_low,x_pos+90,y_high, col=lut[i], border=NA)
-    	text(x_pos+.05, (y_low + y_high)/2, values[i], adj = -2)
-    }	
-}
 color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
 text(7275, 0.63, "Marker's level")
-text(1, 1, "(a)")
+#text(1, 1, "(a)")
 ####
 #fName <- paste0(jobName, "_metadata.tsv")
 #write.table(annotation.col, file = fName, sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
@@ -384,6 +380,662 @@ legend(1, -1.5, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", 
 text(-1.5, 1, "(d)")
 ```
 
+# Compute scran HVG
+```{r Compute scran HVG}
+if(!file.exists("scran_hvg.RData")) {
+  load("Level3.RData")
+  library(scran)
+  
+  no_of_detected_gene_per_sample <- colSums(ddata > 0)
+  ddata <- ddata[,no_of_detected_gene_per_sample > 500]
+  
+  sfs <- scran::calculateSumFactors(ddata)
+  lognorm <- scater::normalizeCounts(ddata, size_factors = sfs)
+  stats <- modelGeneVar(lognorm)
+  scran_hvg <- getTopHVGs(stats, fdr.threshold=0.05)
+  
+  save(scran_hvg, file = "scran_hvg.RData")
+} else load("scran_hvg.RData")
+```
+
+
+# AWST with scran
+```{r AWST with scra,fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+if(!file.exists("AWST_expression_dist_hclust_scran.RData")) {
+  load("normCounts.RData")
+  
+  awstData <- awst(normCounts, poscount = TRUE, full_quantile = TRUE)
+  awst_scran <- awstData[, scran_hvg]
+  nrow_awstData <- nrow(awst_scran)
+  ncol_awstData <- ncol(awst_scran)
+  ddist <- dist(awst_scran)
+
+  hhc <- hclust(ddist, method = "ward.D2")
+  
+  save(hhc, nrow_awstData, ncol_awstData, scran_hvg, file = "AWST_expression_dist_hclust_scran.RData")
+} else load("AWST_expression_dist_hclust_scran.RData")
+
+mmain  <-  paste0("(b) - CBMC study (", nrow_awstData, " cells/", ncol_awstData, " genes), AWST & scran")
+if(save_plots) {
+#  mmain <- ""
+  png(paste0(jobName, "_expression_dist_hclust_AWST_scran.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'AWST/scran' <- as.character(clust.df$tmp)
+
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+#save(clust.df, clust.colorCode, file = "clustering_awst_scran.RData")
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+llegend <- llegend[AWST_fill]
+ffill <- ffill[AWST_fill]
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "AWST & scran", title.adj = 0)
+
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+
+# Analysis with VST normalization 
+
+```{r VST_expression.RData, eval = !file.exists("VST_expression_dist_hclust.RData")}
+if(!file.exists("VST_expression.RData")) {
+library(DESeq2)
+load("Level3.RData")
+
+no_of_detected_gene_per_sample <- colSums(ddata > 0) 
+ddata <- ddata[,no_of_detected_gene_per_sample > 500]
+# ddata[ddata == 0] <- 1
+annotation.df <- annotation.df[colnames(ddata),]
+
+dds <- DESeqDataSetFromMatrix(countData = as.matrix(ddata), 
+                              colData = annotation.df, 
+                              design = ~1)
+dds <- estimateSizeFactors(dds, type="poscounts")
+# system.time({vvst <- vst(dds, blind=FALSE)})
+# Error in vst(dds, blind = FALSE) : 
+#  less than 'nsub' rows with mean normalized count > 5, 
+#  it is recommended to use varianceStabilizingTransformation directly
+
+system.time({vvst <- varianceStabilizingTransformation(dds, blind=FALSE)})
+#-- note: fitType='parametric', but the dispersion trend was not well captured by the
+#   function: y = a/x + b, and a local regression fit was automatically substituted.
+#   specify fitType='local' or 'mean' to avoid this message next time.
+  #    user   system  elapsed 
+  #1006.131   20.738 1009.941 
+
+save(vvst, file = "VST_expression.RData")
+
+} else load("VST_expression.RData")
+```
+
+```{r VST_expression_dist_hclust.RData, warning=FALSE}
+if(!file.exists("VST_expression_dist_hclust.RData")) {
+  
+  vars <- matrixStats::rowVars(assay(vvst))
+  names(vars) <- rownames(vvst)
+  vars <- sort(vars, decreasing = TRUE)
+
+  vst_hvg <- assay(vvst)[names(vars)[seq_len(ncol(exprData))],]
+  nrow_vst_hvg <- ncol(vst_hvg)
+  ncol_vst_hvg <- nrow(vst_hvg)
+  dist_vst_hvg <- dist(t(vst_hvg))
+  hhc_hvg <- hclust(dist_vst_hvg, method = "ward.D2")
+  
+  
+  vst_gf <- assay(vvst)[colnames(exprData),]
+  nrow_vst_gf <- ncol(vst_gf)
+  ncol_vst_gf <- nrow(vst_gf)
+  dist_vst_gf <- dist(t(vst_gf))
+  hhc_gf <- hclust(dist_vst_gf, method = "ward.D2")
+  
+  
+  vst_scran <- assay(vvst)[scran_hvg,]
+  nrow_vst_scran <- ncol(vst_scran)
+  ncol_vst_scran <- nrow(vst_scran)
+  dist_vst_scran <- dist(t(vst_scran))
+  hhc_scran <- hclust(dist_vst_scran, method = "ward.D2")
+  
+  save(nrow_vst_hvg, ncol_vst_hvg, hhc_hvg,
+       nrow_vst_gf, ncol_vst_gf, hhc_gf,
+       nrow_vst_scran, ncol_vst_scran, hhc_scran,
+       file = "VST_expression_dist_hclust.RData")
+  
+} else load("VST_expression_dist_hclust.RData")
+```
+
+
+## VST & Highly Variable Genes
+```{r, fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+hhc <- hhc_hvg
+mmain  <-  paste0("(a) - CBMC study (", nrow_vst_gf, " cells/", ncol_vst_gf, " genes), VST & HVG")
+if(save_plots) {
+  png(paste0(jobName, "_expression_dist_hclust_VST_HVG.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+colorCode[4] <- "gray"
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'VST/HVG' <- as.character(clust.df$tmp)
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+#save(clust.df, colorCode, file = "clustering_VST_HVG.RData")
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+tmp <- llegend
+llegend <- llegend[AWST_fill]
+llegend[is.na(llegend)] <- setdiff(tmp, llegend)
+tmp <- ffill
+ffill <- ffill[AWST_fill]
+ffill[is.na(ffill)] <- setdiff(tmp, ffill)
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "VST & HVG", title.adj = 0)
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+## VST & genes selected by AWST
+```{r, fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+hhc <- hhc_gf
+mmain  <-  paste0("(b) - CBMC study (", nrow_vst_gf, " cells/", ncol_vst_gf, " genes), VST & genes from AWST")
+if(save_plots) {
+  png(paste0(jobName, "_expression_dist_hclust_VST_GF.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+colorCode[4] <- "gray"
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'VST/HVG from AWST' <- as.character(clust.df$tmp)
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+#save(clust.df, colorCode, file = "clustering_VST_GF.RData")
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+tmp <- llegend
+llegend <- llegend[AWST_fill]
+llegend[is.na(llegend)] <- setdiff(tmp, llegend)
+tmp <- ffill
+ffill <- ffill[AWST_fill]
+ffill[is.na(ffill)] <- setdiff(tmp, ffill)
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "VST/HVG from AWST", title.adj = 0)
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+
+## VST & scran
+```{r, fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+hhc <- hhc_scran
+mmain  <-  paste0("(c) - CBMC study (", nrow_vst_gf, " cells/", ncol_vst_gf, " genes), VST & scran")
+if(save_plots) {
+  png(paste0(jobName, "_expression_dist_hclust_VST_scran.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+colorCode[6] <- "gray"
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'VST/scran' <- as.character(clust.df$tmp)
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+#save(clust.df, colorCode, file = "clustering_VST_scran.RData")
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+tmp <- llegend
+llegend <- llegend[AWST_fill]
+llegend[is.na(llegend)] <- setdiff(tmp, llegend)
+tmp <- ffill
+ffill <- ffill[AWST_fill]
+ffill[is.na(ffill)] <- setdiff(tmp, ffill)
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "VST/scran", title.adj = 0)
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+
+
+# Analysis with Townes normalization
+
+```{r SCRY_expression.RData, eval = !file.exists("SCRY_expression_dist_hclust.RData")}
+if(!file.exists("SCRY_expression.RData")) {
+  library(scry)
+  load("Level3.RData")
+
+  no_of_detected_gene_per_sample <- colSums(ddata > 0) 
+  ddata <- ddata[,no_of_detected_gene_per_sample > 500]
+# ddata[ddata == 0] <- 1
+
+  system.time(scryData_pearson <- nullResiduals(as.matrix(ddata), type = "pearson"))
+#   user  system elapsed 
+#  5.909   3.773   4.441 
+
+  ans_devianceFeatureSelection <- devianceFeatureSelection(as.matrix(ddata))
+  names(ans_devianceFeatureSelection) <- rownames(ddata)
+  ans_devianceFeatureSelection <- sort(ans_devianceFeatureSelection, decreasing = TRUE)
+
+  save(scryData_pearson, ans_devianceFeatureSelection, file = "SCRY_expression.RData")
+} else load("SCRY_expression.RData")
+```
+
+```{r SCRY_expression_dist_hclust.RData, warning=FALSE}
+if(!file.exists("SCRY_expression_dist_hclust.RData")) {
+  
+  # select high variable genes
+  vars <- matrixStats::rowVars(scryData_pearson)
+  names(vars) <- rownames(scryData_pearson)
+  vars <- sort(vars, decreasing = TRUE)
+  scry_hvg <- scryData_pearson[names(vars)[seq_len(ncol(exprData))],]
+  nrow_hvg <- ncol(scry_hvg)
+  ncol_hvg <- nrow(scry_hvg)
+  dist_hvg <- dist(t(scry_hvg))
+  hhc_hvg <- hclust(dist_gf, method = "ward.D2")
+  
+  scry_gf <- scryData_pearson[colnames(exprData),]
+  nrow_gf <- ncol(scry_gf)
+  ncol_gf <- nrow(scry_gf)
+  dist_gf <- dist(t(scry_gf))
+  hhc_gf <- hclust(dist_gf, method = "ward.D2")
+  
+  scry_scran <- scryData_pearson[scran_hvg,]
+  nrow_scran <- ncol(scry_scran)
+  ncol_scran <- nrow(scry_scran)
+  dist_scran <- dist(t(scry_scran))
+  hhc_scran <- hclust(dist_scran, method = "ward.D2")
+  
+  hvg_scry <- names(ans_devianceFeatureSelection[seq_len(ncol(exprData))])
+  scry_scry <- scryData_pearson[hvg_scry,]
+  nrow_scry <- ncol(scry_scry)
+  ncol_scry <- nrow(scry_scry)
+  dist_scry <- dist(t(scry_scry))
+  hhc_scry <- hclust(dist_scry, method = "ward.D2")
+  
+  save(nrow_hvg, ncol_hvg, hhc_hvg,
+       nrow_gf, ncol_gf, hhc_gf,
+       nrow_scran, ncol_scran, hhc_scran,
+       hhc_scry, nrow_scry, ncol_scry, hvg_scry, 
+       file = "SCRY_expression_dist_hclust.RData")
+  
+} else load("SCRY_expression_dist_hclust.RData")
+```
+
+
+## Townes & Highly Variable Genes
+```{r, fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+hhc <- hhc_hvg
+mmain  <-  paste0("(a) - CBMC study (", nrow_gf, " cells/", ncol_gf, " genes), Townes & HVG")
+if(save_plots) {
+  png(paste0(jobName, "_expression_dist_hclust_scry_HVG.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+colorCode[c(2, 4:6)] <- "gray"
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'Townes/HVG' <- as.character(clust.df$tmp)
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+#save(clust.df, colorCode, file = "clustering_scry_HVG.RData")
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+tmp <- llegend
+llegend <- llegend[AWST_fill]
+#llegend[is.na(llegend)] <- setdiff(tmp, llegend)
+tmp <- ffill
+ffill <- ffill[AWST_fill]
+#ffill[is.na(ffill)] <- setdiff(tmp, ffill)
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "VST & HVG", title.adj = 0)
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+## Townes & genes selected by AWST
+```{r, fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+hhc <- hhc_gf
+mmain  <-  paste0("(b) - CBMC study (", nrow_gf, " cells/", ncol_gf, " genes), Townes & genes from AWST")
+if(save_plots) {
+  png(paste0(jobName, "_expression_dist_hclust_scry_GF.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+colorCode[5:6] <- "gray"
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'Townes/HVG from AWST' <- as.character(clust.df$tmp)
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+#save(clust.df, colorCode, file = "clustering_scry_GF.RData")
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+tmp <- llegend
+llegend <- llegend[AWST_fill]
+llegend[6] <- setdiff(tmp, llegend)
+tmp <- ffill
+ffill <- ffill[AWST_fill]
+ffill[6] <- setdiff(tmp, ffill)
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "Townes/HVG from AWST", title.adj = 0)
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+
+## Townes & scran
+```{r, fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+hhc <- hhc_scran
+mmain  <-  paste0("(c) - CBMC study (", nrow_scran, " cells/", ncol_scran, " genes), Townes & scran")
+if(save_plots) {
+  png(paste0(jobName, "_expression_dist_hclust_scry_scran.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+colorCode[c(2, 4:6)] <- "gray"
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'Townes/scran' <- as.character(clust.df$tmp)
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+#save(clust.df, colorCode, file = "clustering_scry_scran.RData")
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+tmp <- llegend
+llegend <- llegend[AWST_fill]
+#llegend[is.na(llegend)] <- setdiff(tmp, llegend)
+tmp <- ffill
+ffill <- ffill[AWST_fill]
+#ffill[is.na(ffill)] <- setdiff(tmp, ffill)
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "Townes/scran", title.adj = 0)
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+
+## Townes & scry
+```{r, fig.width=30, fig.height=13, echo=TRUE, eval=TRUE}
+hhc <- hhc_scry
+mmain  <-  paste0("(d) - CBMC study (", nrow_scran, " cells/", ncol_scran, " genes), Townes & scry")
+if(save_plots) {
+  png(paste0(jobName, "_expression_dist_hclust_scry_dev.png"), 
+      width= png_width_large, height= png_height_large, res = png_res)
+}
+
+hhc$height <- hhc$height/max(hhc$height)
+annotation.df <- annotation.df[hhc$labels,]
+
+clust.df <- data.frame(cell = clustering.df$cell, 
+                       CBMC6.explanatory = clustering.df$CBMC6.explanatory, 
+                       CBMC6.col = clustering.df$CBMC6.col,
+                       row.names = clustering.df$cell)
+
+plot(hhc, hang = -1, labels = FALSE, xlab = "", sub = "", main = mmain)
+###
+wwhere <- 6
+hh <- mean(c(hhc$height[length(hhc$height)-wwhere+2], hhc$height[length(hhc$height)-wwhere+1]))
+segments(1, hh, nrow_exprData, hh, col = "red")
+clust.df$tmp <- as.factor(cutree(hhc, k = wwhere))
+
+tt <- table(clust.df$tmp, clust.df$CBMC6.col)
+colorCode <- colnames(tt)[apply(tt, 1, which.max)]
+colorCode[5:6] <- "gray"
+levels(clust.df$tmp) <- colorCode
+
+annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
+colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col))
+annotation.col <- annotation.col[, rev(c( "CD19", "CD3",  "CD11c", "CD14","CD4","CD8", "CD2","CD57"))]
+annotation.col$CBMC <- as.character(clust.df$CBMC6.col)
+annotation.col$'Townes/scry' <- as.character(clust.df$tmp)
+
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = 0.29, y_shift = 0.0045)
+
+tt <- table(clust.df$tmp)
+pct <- paste0(round(100*tt/sum(tt), 1), "%")
+llegend <- paste("", tt, " cells; (", pct, ")", sep = "")
+ffill <- names(tt)
+names(llegend) <- names(ffill) <- ffill
+tmp <- llegend
+llegend <- llegend[AWST_fill]
+#llegend[is.na(llegend)] <- setdiff(tmp, llegend)
+tmp <- ffill
+ffill <- ffill[AWST_fill]
+#ffill[is.na(ffill)] <- setdiff(tmp, ffill)
+legend(1, 0.97, legend=AWST_legend, fill = AWST_fill, y.intersp = 1, box.col = "white", border = "white", title = "CBMC", title.adj = 0)
+legend(1500, 0.97, legend=llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "Townes/scry", title.adj = 0)
+
+color.bar3(7230, 0.65, ffill2, -0.6, values = vvalues)
+text(7275, 0.63, "Marker's level")
+```
+
+
+
+# Feature selection steps
+
+Here we compare the genes selected by each approach.
+
+```{r sel}
+library(UpSetR)
+
+# vars <- matrixStats::rowVars(ddata)
+# names(vars) <- rownames(ddata)
+# vars <- sort(vars, decreasing = TRUE)
+
+load("expression.RData")
+
+forUpset <- list("AWST +\n geneFilter" = colnames(exprData),
+                 "scran HVG" = scran_hvg,
+                 "scry HVG" = hvg_scry)
+
+if(save_plots) {
+  png(paste0(jobName, "_upset.png"), 
+      width= 1100, height= 700, res = png_res)
+}
+upset(fromList(forUpset), order.by = "freq", 
+      main.bar.color = "#1F78B4", sets.bar.color = "#1F78B4")
+
+library(eulerr)
+if(save_plots) {
+  png(paste0(jobName, "_eulerr.png"), 
+      width= png_height_large, height= png_height_large, res = png_res)
+}
+plot(euler(forUpset),quantities = TRUE)
+```
+
+
+```{r knit_exit}
+#knitr::knit_exit()
+```
+
 # Session info
 ```{r}
 sessionInfo()
@@ -392,3 +1044,4 @@ sessionInfo()
 # References
 
 - [Simultaneous epitope and transcriptome measurement in single cells](https://www.nature.com/articles/nmeth.4380)
+
