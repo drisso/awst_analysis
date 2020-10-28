@@ -17,8 +17,6 @@ library(knitr)
 knitr::opts_chunk$set(echo = TRUE, fig.height = 4.5, fig.width =  11, fig.align = "center")
 ```
 
-blah blah 
-
 This file belongs to the repository: https://github.com/drisso/awst_analysis.
 
 The code is released with license GPL v3.0.
@@ -663,12 +661,12 @@ clustering.df$RaceID_raw <- clustering.df$tmp <- ans_RaceID_raw$clustering
 what <- "RaceID + counts"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RaceID_raw$umap.1, ans_RaceID_raw$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RaceID_raw$umap.1, ans_RaceID_raw$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 
-cat("\n\n### AWST + RaceID (default + t-SNE) of ", prefix, "\n")
-plot(ans_RaceID_raw$tsne.1, ans_RaceID_raw$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#cat("\n\n### AWST + RaceID (default + t-SNE) of ", prefix, "\n")
+#plot(ans_RaceID_raw$tsne.1, ans_RaceID_raw$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 ```{r raceID_awst, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### AWST + RaceID (default + umap) of ", prefix, "\n")
@@ -677,12 +675,12 @@ clustering.df$RaceID_awst <- clustering.df$tmp <- ans_RaceID_awst$clustering
 what <- "RaceID + AWST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RaceID_awst$umap.1, ans_RaceID_awst$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RaceID_awst$umap.1, ans_RaceID_awst$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 
-cat("\n\n### AWST + RaceID (default + t-SNE) of ", prefix, "\n")
-plot(ans_RaceID_awst$tsne.1, ans_RaceID_awst$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#cat("\n\n### AWST + RaceID (default + t-SNE) of ", prefix, "\n")
+#plot(ans_RaceID_awst$tsne.1, ans_RaceID_awst$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 ```{r raceID_vst, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### VST + RaceID (default + umap) of ", prefix, "\n")
@@ -691,12 +689,12 @@ clustering.df$RaceID_vst <- clustering.df$tmp <- ans_RaceID_VST$clustering
 what <- "RaceID + VST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RaceID_VST$umap.1, ans_RaceID_VST$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RaceID_VST$umap.1, ans_RaceID_VST$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 
-cat("\n\n### VST + RaceID (default + t-SNE) of ", prefix, "\n")
-plot(ans_RaceID_VST$tsne.1, ans_RaceID_VST$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#cat("\n\n### VST + RaceID (default + t-SNE) of ", prefix, "\n")
+#plot(ans_RaceID_VST$tsne.1, ans_RaceID_VST$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 ```{r raceID_scry, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### Townes + RaceID (default + umap) of ", prefix, "\n")
@@ -705,12 +703,12 @@ clustering.df$RaceID_scry <- clustering.df$tmp <- ans_RaceID_scry$clustering
 what <- "RaceID + Townes"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RaceID_scry$umap.1, ans_RaceID_scry$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RaceID_scry$umap.1, ans_RaceID_scry$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 
-cat("\n\n### Townes + RaceID (default + t-SNE) of ", prefix, "\n")
-plot(ans_RaceID_scry$tsne.1, ans_RaceID_scry$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#cat("\n\n### Townes + RaceID (default + t-SNE) of ", prefix, "\n")
+#plot(ans_RaceID_scry$tsne.1, ans_RaceID_scry$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 
 ```{r RCA_raw, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
@@ -720,8 +718,8 @@ clustering.df$RCA_raw <- clustering.df$tmp <- ans_RCA_raw$clustering
 what <- "RCA + counts"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RCA_raw$pca.1, ans_RCA_raw$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RCA_raw$pca.1, ans_RCA_raw$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 ```{r RCA_awst, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### AWST + RCA (pca) of ", prefix, "\n")
@@ -730,8 +728,8 @@ clustering.df$RCA_awst <- clustering.df$tmp <- ans_RCA_awst$clustering
 what <- "RCA +  AWST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RCA_awst$pca.1, ans_RCA_awst$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RCA_awst$pca.1, ans_RCA_awst$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 ```{r RCA_vst, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### vst + RCA (pca) of ", prefix, "\n")
@@ -740,8 +738,8 @@ clustering.df$RCA_raw <- clustering.df$tmp <- ans_RCA_raw$clustering
 what <- "RCA + VST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RCA_raw$pca.1, ans_RCA_raw$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RCA_raw$pca.1, ans_RCA_raw$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 ```{r RCA_scry, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### Townes + RCA (pca) of ", prefix, "\n")
@@ -750,8 +748,8 @@ clustering.df$RCA_raw <- clustering.df$tmp <- ans_RCA_scry$clustering
 what <- "RCA + Townes"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_RCA_scry$pca.1, ans_RCA_scry$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
+#plot(ans_RCA_scry$pca.1, ans_RCA_scry$pca.2, 
+#    col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "")
 ```
 
 ```{r Seurat_raw_LoR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
@@ -761,34 +759,34 @@ clustering.df$Seurat_raw_LoR <- clustering.df$tmp <- ans_Seurat_raw_LoR$clusteri
 what <- "Seurat (LoRes) + counts"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
 clustering.df$tmp <- factor(clustering.df$tmp)
 levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
 clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_raw_LoR$pca.1, ans_Seurat_raw_LoR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### counts + Seurat  (low resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_raw_LoR$umap.1, ans_Seurat_raw_LoR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### counts + Seurat  (low resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_raw_LoR$umap.1, ans_Seurat_raw_LoR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_raw_LoR$umap.1, ans_Seurat_raw_LoR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_raw_LoR$umap.1, ans_Seurat_raw_LoR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### counts + Seurat  (low resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_raw_LoR$tsne.1, ans_Seurat_raw_LoR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### counts + Seurat  (low resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_raw_LoR$tsne.1, ans_Seurat_raw_LoR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_raw_LoR$tsne.1, ans_Seurat_raw_LoR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_raw_LoR$tsne.1, ans_Seurat_raw_LoR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 ```{r Seurat_awst_LoR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### awst + Seurat  (low resolution, pca) of ", prefix, "\n")
@@ -797,34 +795,34 @@ clustering.df$Seurat_awst_LoR <- clustering.df$tmp <- ans_Seurat_awst_LoR$cluste
 what <- "Seurat (LoRes) +  AWST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_awst_LoR$pca.1, ans_Seurat_awst_LoR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_awst_LoR$pca.1, ans_Seurat_awst_LoR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_awst_LoR$pca.1, ans_Seurat_awst_LoR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#clustering.df$tmp <- factor(clustering.df$tmp)
+#levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
+#clustering.df$tmp <- as.character(clustering.df$tmp)
+#plot(ans_Seurat_awst_LoR$pca.1, ans_Seurat_awst_LoR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### awst + Seurat  (low resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_awst_LoR$umap.1, ans_Seurat_awst_LoR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### awst + Seurat  (low resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_awst_LoR$umap.1, ans_Seurat_awst_LoR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_awst_LoR$umap.1, ans_Seurat_awst_LoR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_awst_LoR$umap.1, ans_Seurat_awst_LoR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### awst + Seurat  (low resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_awst_LoR$tsne.1, ans_Seurat_awst_LoR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### awst + Seurat  (low resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_awst_LoR$tsne.1, ans_Seurat_awst_LoR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_awst_LoR$tsne.1, ans_Seurat_awst_LoR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_awst_LoR$tsne.1, ans_Seurat_awst_LoR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 ```{r Seurat_VST_LoR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### VST + Seurat  (low resolution, pca) of ", prefix, "\n")
@@ -833,34 +831,34 @@ clustering.df$Seurat_VST_LoR <- clustering.df$tmp <- ans_Seurat_VST_LoR$clusteri
 what <- "Seurat (LoRes) + VST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_VST_LoR$pca.1, ans_Seurat_VST_LoR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_VST_LoR$pca.1, ans_Seurat_VST_LoR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_VST_LoR$pca.1, ans_Seurat_VST_LoR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#clustering.df$tmp <- factor(clustering.df$tmp)
+#levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
+#clustering.df$tmp <- as.character(clustering.df$tmp)
+#plot(ans_Seurat_VST_LoR$pca.1, ans_Seurat_VST_LoR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### VST + Seurat  (low resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_VST_LoR$umap.1, ans_Seurat_VST_LoR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### VST + Seurat  (low resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_VST_LoR$umap.1, ans_Seurat_VST_LoR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_VST_LoR$umap.1, ans_Seurat_VST_LoR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_VST_LoR$umap.1, ans_Seurat_VST_LoR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### VST + Seurat  (low resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_VST_LoR$tsne.1, ans_Seurat_VST_LoR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### VST + Seurat  (low resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_VST_LoR$tsne.1, ans_Seurat_VST_LoR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_VST_LoR$tsne.1, ans_Seurat_VST_LoR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_VST_LoR$tsne.1, ans_Seurat_VST_LoR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 ```{r Seurat_scry_LoR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### Townes + Seurat  (low resolution, pca) of ", prefix, "\n")
@@ -869,34 +867,34 @@ clustering.df$Seurat_scry_LoR <- clustering.df$tmp <- ans_Seurat_scry_LoR$cluste
 what <- "Seurat (LoRes) + Townes"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_scry_LoR$pca.1, ans_Seurat_scry_LoR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_scry_LoR$pca.1, ans_Seurat_scry_LoR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_scry_LoR$pca.1, ans_Seurat_scry_LoR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#clustering.df$tmp <- factor(clustering.df$tmp)
+#levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
+#clustering.df$tmp <- as.character(clustering.df$tmp)
+#plot(ans_Seurat_scry_LoR$pca.1, ans_Seurat_scry_LoR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### Townes + Seurat  (low resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_scry_LoR$umap.1, ans_Seurat_scry_LoR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### Townes + Seurat  (low resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_scry_LoR$umap.1, ans_Seurat_scry_LoR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_scry_LoR$umap.1, ans_Seurat_scry_LoR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_scry_LoR$umap.1, ans_Seurat_scry_LoR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### Townes + Seurat  (low resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_scry_LoR$tsne.1, ans_Seurat_scry_LoR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### Townes + Seurat  (low resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_scry_LoR$tsne.1, ans_Seurat_scry_LoR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_scry_LoR$tsne.1, ans_Seurat_scry_LoR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_scry_LoR$tsne.1, ans_Seurat_scry_LoR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 ```{r Seurat_raw_HiR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### counts + Seurat  (high resolution, pca) of ", prefix, "\n")
@@ -905,34 +903,34 @@ clustering.df$Seurat_raw_HiR <- clustering.df$tmp <- ans_Seurat_raw_HiR$clusteri
 what <- "Seurat (HiRes) +  counts"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_raw_HiR$pca.1, ans_Seurat_raw_HiR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_raw_HiR$pca.1, ans_Seurat_raw_HiR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_raw_HiR$pca.1, ans_Seurat_raw_HiR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#clustering.df$tmp <- factor(clustering.df$tmp)
+#levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
+#clustering.df$tmp <- as.character(clustering.df$tmp)
+#plot(ans_Seurat_raw_HiR$pca.1, ans_Seurat_raw_HiR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### counts + Seurat  (high resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_raw_HiR$umap.1, ans_Seurat_raw_HiR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### counts + Seurat  (high resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_raw_HiR$umap.1, ans_Seurat_raw_HiR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_raw_HiR$umap.1, ans_Seurat_raw_HiR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_raw_HiR$umap.1, ans_Seurat_raw_HiR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### counts + Seurat  (high resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_raw_HiR$tsne.1, ans_Seurat_raw_HiR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### counts + Seurat  (high resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_raw_HiR$tsne.1, ans_Seurat_raw_HiR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_raw_HiR$tsne.1, ans_Seurat_raw_HiR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_raw_HiR$tsne.1, ans_Seurat_raw_HiR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 ```{r Seurat_awst_HiR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### awst + Seurat  (high resolution, pca) of ", prefix, "\n")
@@ -941,34 +939,34 @@ clustering.df$Seurat_awst_HiR <- clustering.df$tmp <- ans_Seurat_awst_HiR$cluste
 what <- "Seurat (HiRes) +  AWST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_awst_HiR$pca.1, ans_Seurat_awst_HiR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_awst_HiR$pca.1, ans_Seurat_awst_HiR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_awst_HiR$pca.1, ans_Seurat_awst_HiR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#clustering.df$tmp <- factor(clustering.df$tmp)
+#levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
+#clustering.df$tmp <- as.character(clustering.df$tmp)
+#plot(ans_Seurat_awst_HiR$pca.1, ans_Seurat_awst_HiR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### awst + Seurat  (high resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_awst_HiR$umap.1, ans_Seurat_awst_HiR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### awst + Seurat  (high resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_awst_HiR$umap.1, ans_Seurat_awst_HiR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_awst_HiR$umap.1, ans_Seurat_awst_HiR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_awst_HiR$umap.1, ans_Seurat_awst_HiR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### awst + Seurat  (high resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_awst_HiR$tsne.1, ans_Seurat_awst_HiR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### awst + Seurat  (high resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_awst_HiR$tsne.1, ans_Seurat_awst_HiR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_awst_HiR$tsne.1, ans_Seurat_awst_HiR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_awst_HiR$tsne.1, ans_Seurat_awst_HiR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 ```{r Seurat_VST_HiR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### VST + Seurat  (high resolution, pca) of ", prefix, "\n")
@@ -977,34 +975,34 @@ clustering.df$Seurat_VST_HiR <- clustering.df$tmp <- ans_Seurat_VST_HiR$clusteri
 what <- "Seurat (HiRes) + VST"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_VST_HiR$pca.1, ans_Seurat_VST_HiR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_VST_HiR$pca.1, ans_Seurat_VST_HiR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_VST_HiR$pca.1, ans_Seurat_VST_HiR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#clustering.df$tmp <- factor(clustering.df$tmp)
+#levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
+#clustering.df$tmp <- as.character(clustering.df$tmp)
+#plot(ans_Seurat_VST_HiR$pca.1, ans_Seurat_VST_HiR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### VST + Seurat  (high resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_VST_HiR$umap.1, ans_Seurat_VST_HiR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### VST + Seurat  (high resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_VST_HiR$umap.1, ans_Seurat_VST_HiR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_VST_HiR$umap.1, ans_Seurat_VST_HiR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_VST_HiR$umap.1, ans_Seurat_VST_HiR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### VST + Seurat  (high resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_VST_HiR$tsne.1, ans_Seurat_VST_HiR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### VST + Seurat  (high resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_VST_HiR$tsne.1, ans_Seurat_VST_HiR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_VST_HiR$tsne.1, ans_Seurat_VST_HiR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_VST_HiR$tsne.1, ans_Seurat_VST_HiR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 ```{r Seurat_scry_HiR, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
 cat("\n\n### Townes + Seurat  (high resolution, pca) of ", prefix, "\n")
@@ -1013,34 +1011,34 @@ clustering.df$Seurat_scry_LoR <- clustering.df$tmp <- ans_Seurat_scry_HiR$cluste
 what <- "Seurat (HiRes) + Townes"
 results[k <- k+1,] <- c(prefix, what, get_metrics(clustering.df$True.col, clustering.df$tmp))
 
-plot(ans_Seurat_scry_HiR$pca.1, ans_Seurat_scry_HiR$pca.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#plot(ans_Seurat_scry_HiR$pca.1, ans_Seurat_scry_HiR$pca.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-clustering.df$tmp <- factor(clustering.df$tmp)
-levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
-clustering.df$tmp <- as.character(clustering.df$tmp)
-plot(ans_Seurat_scry_HiR$pca.1, ans_Seurat_scry_HiR$pca.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#clustering.df$tmp <- factor(clustering.df$tmp)
+#levels(clustering.df$tmp) <- ccolors(length(levels(clustering.df$tmp)))
+#clustering.df$tmp <- as.character(clustering.df$tmp)
+#plot(ans_Seurat_scry_HiR$pca.1, ans_Seurat_scry_HiR$pca.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### Townes + Seurat  (high resolution, umap) of ", prefix, "\n")
-plot(ans_Seurat_scry_HiR$umap.1, ans_Seurat_scry_HiR$umap.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### Townes + Seurat  (high resolution, umap) of ", prefix, "\n")
+#plot(ans_Seurat_scry_HiR$umap.1, ans_Seurat_scry_HiR$umap.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_scry_HiR$umap.1, ans_Seurat_scry_HiR$umap.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_scry_HiR$umap.1, ans_Seurat_scry_HiR$umap.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 
-cat("\n\n### Townes + Seurat  (high resolution, tsne) of ", prefix, "\n")
-plot(ans_Seurat_scry_HiR$tsne.1, ans_Seurat_scry_HiR$tsne.2, 
-     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with theoretical partition")
+#cat("\n\n### Townes + Seurat  (high resolution, tsne) of ", prefix, "\n")
+#plot(ans_Seurat_scry_HiR$tsne.1, ans_Seurat_scry_HiR$tsne.2, 
+#     col= clustering.df$cell.col, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with theoretical partition")
 
-plot(ans_Seurat_scry_HiR$tsne.1, ans_Seurat_scry_HiR$tsne.2, 
-     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
-     main = "Cells annotated with empirical partition")
+#plot(ans_Seurat_scry_HiR$tsne.1, ans_Seurat_scry_HiR$tsne.2, 
+#     col= clustering.df$tmp, pch = 19, xlab = "", ylab = "", 
+#     main = "Cells annotated with empirical partition")
 ```
 
 ```{r SC3, eval=TRUE, fig.height = 20, fig.width = 20, fig.align = "center", results='asis', echo=FALSE}
