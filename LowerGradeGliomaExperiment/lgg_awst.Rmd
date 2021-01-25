@@ -49,10 +49,10 @@ We also include a tab-delimited file with some gene info useful for the GC-conte
 
 ```{r setup, message=FALSE}
 rm(list = ls()) 
-setwd("~/Dropbox/AWST/gitHub/lgg20200316_AWST/") # 20200318
-jobName <- "LGG20200316"
+setwd("~/Dropbox/AWST/gitHub/lgg20201226_AWST//")
+jobName <- "LGG20201226"
 library(awst)
-library(EDASeq)
+#library(EDASeq)
 library(scales)
 library(survival)
 library(survminer)
@@ -138,6 +138,7 @@ if(!file.exists(paste0(jobName, "_dist_hclust.RData"))) {
 # Figure 4: the clustering
 
 ```{r _plot_hclust_main.png, fig.width=30, fig.height=15, echo=FALSE}
+#jobName <- "LGG20201226"
 load(paste0(jobName, "_dist_hclust.RData"))
 annotation.df <- annotation.df[hhc$labels,]
 clustering.col <- annotation.col[hhc$labels,]
@@ -190,13 +191,14 @@ clust.colorCode <- c(clust.colorCode, colorCode)
 no_of_clusters <- 15
 hh <- mean(c(hhc$height[length(hhc$height)-no_of_clusters+2], hhc$height[length(hhc$height)-no_of_clusters+1]))
 clust5bis <- clust5bis.col <- as.factor(cutree(hhc, k = no_of_clusters))
-levels(clust5bis) <- paste0("c5", levels(clust5bis))
-levels(clust5bis)<- c("c51", "c52", "c531", "c532", "c541", "c55", "c541", "c533", "c541", "c55", "c55", "c542", "c51", "c51", "c52")
+#levels(clust5bis) <- paste0("c5", levels(clust5bis))
+#levels(clust5bis) <- c("c51", "c52", "c531", "c532", "c541", "c55", "c541", "c533", "c541", "c55", "c55", "c542", "c51", "c51", "c52")
+levels(clust5bis) <- c("c51", "c52", "c531", "c532", "c541", "c551", "c541", "c533", "c541", "c552", "c551", "c542", "c51", "c51", "c52")
 tmp <- as.factor(as.character(clust5bis)); names(tmp) <- names(clust5bis); clust5bis <- tmp
 annotation.df$clust5bis <- clust5bis.col <- clust5bis
-levels(clust5bis.col) <- c("red2", "cyan", "darkseagreen", "sienna1", "steelblue", "blue", "gold", "magenta")
+levels(clust5bis.col) <- c("red2", "cyan", "darkseagreen", "sienna1", "steelblue", "blue", "gold", "magenta", "green2")
 annotation.df$clust5bis.col <- clustering.col$clust5bis <- clust5bis.col
-levels(clust5bis) <- c("c51_IDHwt", "c52", "c531_O2", "c532_O3", "c533_O1", "c541_G-Cimp-high", "c542_G-Cimp-low", "c55_nonCodel-gp")
+levels(clust5bis) <- c("c51_IDHwt", "c52", "c531_O2", "c532_O3", "c533_O1", "c541_G-Cimp-high", "c542_G-Cimp-low", "c551_nonCodel-gp", "c552_good_prognosis")
 annotation.df$clust5bis.explanatory <- clust5bis
 tt <- table(clust5bis, clust5bis.col)
 colorCode <- colnames(tt)[apply(tt, 1, which.max)]
@@ -239,6 +241,9 @@ colored_bars(colors = clustering.col, dend = as.dendrogram(hhc), y_scale = -0.15
   ffill <- colnames(tt)[tmp]
   legend(210, 0.95, legend = rownames(tt), fill = ffill, 
        border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+
+AWST.colorCode  <- clust.colorCode
+save(clustering.col, AWST.colorCode, clust5bis, file = paste0(jobName, "_clustering.RData"))
 ```
 
 
@@ -302,6 +307,8 @@ legend(330, 0.99, legend=names(tt), fill = clust.colorCode[names(tt)], y.intersp
 #
 tt <- table(annotation.df$clust5bis.explanatory)
 legend(385, 0.99, legend=names(tt), fill = clust.colorCode[names(tt)], y.intersp = 1, box.col = "white", border = "white", title = "clust5bis", title.adj = 0)
+
+jobName <- "LGG20201226"
 ```
 
 # Supplementary Figure 6
@@ -391,7 +398,7 @@ legend(150, 1, legend = llegend, fill = ffill, y.intersp = 1, box.col = "white",
 
 # Supplementary Figure 9
 
-Kaplan-Meyer estimates of the survival curves associated with the two subsets c541 (G-Cimp-High) ant c542 (G-Cimp-Low), based on the overall survival time. The log-rank test returns p-value = $2\cdot 10^{-4}$.
+Kaplan-Meyer estimates of the survival curves associated with the two subsets c541 (G-Cimp-High) and c542 (G-Cimp-Low), based on the overall survival time. The log-rank test returns p-value = $2\cdot 10^{-4}$.
 
 ```{r, fig.width=20, fig.height=11, fig.align = "center"}
 tmp.df <- annotation.df
@@ -437,13 +444,15 @@ if(save_plots) {
   png(paste0(jobName, "_surv_clust5bis.png"), width= png_width_small, height= png_height_small, res = png_res)
   }
 
-plot(survfit(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ tmp.df$clust5bis.explanatory), col = clust.colorCode[levels(tmp.df$clust5bis.explanatory)], mark.time = TRUE, main = "", lwd = 3)
+plot(survfit(Surv(tmp.df$surv_time, tmp.df$surv_status) ~ tmp.df$clust5bis.explanatory), col = clust.colorCode[levels(tmp.df$clust5bis.explanatory)], mark.time = TRUE, main = "", lwd = 3, xlim = c(0, 220))
 
 tt <- table(tmp.df$clust5bis.explanatory)
 llegend <- paste(names(tt), " (", tt, ")", sep = "")
 ffill <- clust.colorCode[names(tt)]
 legend(155, 1, legend = llegend, fill = ffill, y.intersp = 1, box.col = "white", border = "white", title = "clust5bis", title.adj = 0)
 ```
+
+
 
 # Session info
 
