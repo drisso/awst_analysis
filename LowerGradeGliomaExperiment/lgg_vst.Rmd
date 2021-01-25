@@ -30,8 +30,8 @@ In this script we analyze LGG data normalized with Variance-Stabilizing Transfor
 
 ```{r setup, message=FALSE}
 rm(list = ls()) 
-setwd("~/Dropbox/AWST/gitHub/lgg20200906_VST/")
-jobName <- "LGG20200906"
+setwd("~/Dropbox/AWST/gitHub/lgg20201227_VST/")
+jobName <- "LGG20201227"
 library(awst)
 library(EDASeq)
 library(scales)
@@ -42,9 +42,11 @@ library(heatmap3)
 library(dendextend)
 library(knitr)
 ###
-annotation.df <- read.table("https://raw.githubusercontent.com/drisso/awst_analysis/master/LowerGradeGliomaExperiment/LGG_annotation.tsv", sep = "\t", row.names = 1) #20200316
+annotation.df <- read.table("https://raw.githubusercontent.com/drisso/awst_analysis/master/LowerGradeGliomaExperiment/LGG_annotation.tsv", sep = "\t", row.names = 1) 
 annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
 colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col) )
+load("../lgg20201226_AWST/LGG20201226_clustering.RData")
+annotation.col <- clustering.col[, c(colnames(annotation.col), "clust5bis")]
 ###
 save_plots <- FALSE
 png_width_large <- 1500
@@ -97,7 +99,7 @@ if(save_plots & (what %in% c("HVG10212", "AWST10212"))) {
 plot(hhc, hang = -1, labels = FALSE, xlab = "euclidean/ward", sub = "", main = mmain)
 
 add_Calinski_curve(height = 0.5, from = 1, to = 400)
-colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.1, y_shift = -0.1)
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.12, y_shift = -0.135)
 
 tmp <- apply(tt <- table(annotation.df$exprClust.NEJM, annotation.df$exprClust.NEJM.col), 1, which.max)
 ffill <- colnames(tt)[tmp]
@@ -123,6 +125,11 @@ tmp <- apply(tt <- table(annotation.df$original.subtype, annotation.df$original.
 ffill <- colnames(tt)[tmp]
 legend(210, 0.95, legend = rownames(tt), fill = ffill, 
        border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+
+tt <- table(clust5bis)
+llegend <- paste(names(tt), " (", tt, ")", sep = "")
+legend(450, 0.95, legend = llegend, fill = AWST.colorCode[names(tt)], y.intersp = 1, box.col = "white", border = "white", title = "clust5bis", title.adj = 0)
+#
 ```
 
 \newpage
