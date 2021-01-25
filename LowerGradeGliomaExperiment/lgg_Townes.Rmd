@@ -32,8 +32,8 @@ In this script we analyze LGG data normalized with transformation of Townes et a
 
 ```{r setup, message=FALSE}
 rm(list = ls()) 
-setwd("~/Dropbox/AWST/gitHub/lgg20200913_townes/")
-jobName <- "LGG20200913"
+setwd("~/Dropbox/AWST/gitHub/lgg20201228_townes//")
+jobName <- "LGG20201228"
 library(awst)
 library(EDASeq)
 library(scales)
@@ -44,11 +44,13 @@ library(heatmap3)
 library(dendextend)
 library(knitr)
 ###
-annotation.df <- read.table("https://raw.githubusercontent.com/drisso/awst_analysis/master/LowerGradeGliomaExperiment/LGG_annotation.tsv", sep = "\t", row.names = 1) #20200316
+annotation.df <- read.table("https://raw.githubusercontent.com/drisso/awst_analysis/master/LowerGradeGliomaExperiment/LGG_annotation.tsv", sep = "\t", row.names = 1) 
 annotation.col <- annotation.df[, grep(".col", colnames(annotation.df))]
 colnames(annotation.col) <- gsub(".col", "", colnames(annotation.col) )
+load("../lgg20201226_AWST/LGG20201226_clustering.RData")
+annotation.col <- clustering.col[, c(colnames(annotation.col), "clust5bis")]
 ###
-save_plots <- FALSE
+save_plots <- TRUE
 png_width_large <- 1500
 png_height_large <- 750
 png_width_small <- 700
@@ -71,12 +73,12 @@ AWST_clustering.df <- read.table("../lgg20200316_AWST/AWST_clustering.tsv", head
 
 
 ```{r scryData, echo=TRUE, include=FALSE, eval=TRUE}
-if(!file.exists(paste0(jobName, "_scry.RData"))) {
+if(!file.exists("LGG20200913_scry.RData")) {
   require(scry)
   scryData <- nullResiduals(ddata, type = "pearson")
   scryData <- t(scryData)
   save(scryData, file = paste0(jobName, "_scry.RData"))
-} else load(paste0(jobName, "_scry.RData"))
+} else load("LGG20200913_scry.RData")
 wData <- scryData
 ```
 
@@ -89,6 +91,7 @@ tmp <- HVG2500 <- names(tail(sort(tmp), 2500))
 exprData <-  wData[, tmp]
 no_of_partitions <- c(4, 10)
 ```
+
 ```{r _plot_hclust_main.png, fig.width=30, fig.height=15, echo=FALSE}
 nrow_exprData <- nrow(exprData)
 ncol_exprData <- ncol(exprData)
@@ -101,11 +104,12 @@ hhc$height <- hhc$height/max(hhc$height)
 mmain  <-  paste0(jobName, " (", nrow_exprData, " samples/", ncol_exprData, " genes)")
 if(save_plots & (what %in% c("HVG10212", "AWST10212"))) {
   mmain <- ""
-  png(paste0(jobName, "_plot_hclust_VST_", what, ".png"), width= png_width_large, height= png_height_large, res = png_res)
+  png(paste0(jobName, "_plot_hclust_townes_", what, ".png"), width= png_width_large, height= png_height_large, res = png_res)
   }
 plot(hhc, hang = -1, labels = FALSE, xlab = "euclidean/ward", sub = "", main = mmain)
+
 add_Calinski_curve(height = 0.5, from = 1, to = 400)
-colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.1, y_shift = -0.1)
+colored_bars(colors = annotation.col, dend = as.dendrogram(hhc), y_scale = -0.12, y_shift = -0.135)
 
 tmp <- apply(tt <- table(annotation.df$exprClust.NEJM, annotation.df$exprClust.NEJM.col), 1, which.max)
 ffill <- colnames(tt)[tmp]
@@ -131,7 +135,14 @@ tmp <- apply(tt <- table(annotation.df$original.subtype, annotation.df$original.
 ffill <- colnames(tt)[tmp]
 legend(210, 0.95, legend = rownames(tt), fill = ffill, 
        border = "white", y.intersp = 1, box.col = "white", title = "original subtype", title.adj = 0)
+
+tt <- table(clust5bis)
+llegend <- paste(names(tt), " (", tt, ")", sep = "")
+legend(450, 0.95, legend = llegend, fill = AWST.colorCode[names(tt)], y.intersp = 1, box.col = "white", border = "white", title = "clust5bis", title.adj = 0)
+#
 ```
+
+
 
 \newpage
 # clustering with 5000 HVG
