@@ -128,7 +128,11 @@ if(!file.exists("normCounts.RData")) {
   
 # apply the AWS-transformation 
 if(!file.exists("expression.RData")) {
+  system.time({
   exprData <- awst(normCounts, poscount = TRUE, full_quantile = TRUE)
+  })
+#   user  system elapsed 
+# 10.315   1.470  11.789 
   dim(exprData <- gene_filter(exprData)) #[1] 7613  230
   save(exprData, file = "expression.RData")
 } else load("expression.RData")
@@ -479,6 +483,7 @@ ddata <- ddata[,no_of_detected_gene_per_sample > 500]
 # ddata[ddata == 0] <- 1
 annotation.df <- annotation.df[colnames(ddata),]
 
+  system.time({
 dds <- DESeqDataSetFromMatrix(countData = as.matrix(ddata), 
                               colData = annotation.df, 
                               design = ~1)
@@ -489,11 +494,12 @@ dds <- estimateSizeFactors(dds, type="poscounts")
 #  it is recommended to use varianceStabilizingTransformation directly
 
 system.time({vvst <- varianceStabilizingTransformation(dds, blind=FALSE)})
+})
 #-- note: fitType='parametric', but the dispersion trend was not well captured by the
 #   function: y = a/x + b, and a local regression fit was automatically substituted.
 #   specify fitType='local' or 'mean' to avoid this message next time.
   #    user   system  elapsed 
-  #1006.131   20.738 1009.941 
+  # 579.211   13.637  608.101  
 
 save(vvst, file = "VST_expression.RData")
 
@@ -718,9 +724,12 @@ if(!file.exists("SCRY_expression.RData")) {
   ddata <- ddata[,no_of_detected_gene_per_sample > 500]
 # ddata[ddata == 0] <- 1
 
+  system.time(void <- nullResiduals(as.matrix(ddata), type = "deviance"))
+#   user  system elapsed 
+#  9.652   1.041  10.704 
   system.time(scryData_pearson <- nullResiduals(as.matrix(ddata), type = "pearson"))
 #   user  system elapsed 
-#  5.909   3.773   4.441 
+#  2.614   1.114   6.688 
 
   ans_devianceFeatureSelection <- devianceFeatureSelection(as.matrix(ddata))
   names(ans_devianceFeatureSelection) <- rownames(ddata)
