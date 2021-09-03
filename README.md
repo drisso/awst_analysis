@@ -1,6 +1,6 @@
 # Code to reproduce the analyses of the AWST paper
 
-The code in this repository can be used to reproduce the results of Risso and Pagnotta (2020).
+The code in this repository can be used to reproduce the results of Risso and Pagnotta (2021).
 
 The folder `SyntheticExperiment` contains the code to reproduce the results in Figure 2, Figure 3, Supplementary Figures 1-5, and Supplementary Tables 1-2, 4.
 
@@ -16,7 +16,7 @@ In order to perfectly reproduce the analyses of the paper, you need version 0.0.
 
 The latest, stable version can be downloaded through the Bioconductor project at https://bioconductor.org/packages/awst.
 
-Note that the biggest change between version 0.0.4 and the Bioconductor version is that in the latter the `awst` function will return a matrix of transformed expressions with genes in row and samples in column. This behavior is more consistent with the Bioconductor ecosystem. If you want to run the code in this repository using the latest version of `awst` you have to transpose the result of `awst` with the `t()` function.
+Note that the biggest change between version 0.0.4 and the Bioconductor version is that in the latter the `awst` function will return a matrix of transformed expressions with genes in row and samples in column. This behavior is more consistent with the Bioconductor ecosystem. If you want to run the code in this repository using the latest version of `awst` you have to transpose the result of `awst` with the `t()` function. The same applies to the `gene_filter` function.
 
 ## References
 
